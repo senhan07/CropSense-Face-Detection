@@ -20,10 +20,11 @@ os.makedirs("output/fullbody_cropped", exist_ok=True)
 os.makedirs("output/fullbody_debug", exist_ok=True)
 os.makedirs("output/error_images", exist_ok=True)
 
-#Output cropped resolution (pixel)
+# Output cropped resolution (pixel)
 output_res = 1080
 
-confidence_level = 0.6
+# Set confidence level
+confidence_level = 0.8
 
 # Get a list of input image paths
 input_folder = "input"
@@ -59,6 +60,29 @@ else:
     print("Invalid option selected. Exiting.")
     exit()
 
+# Delete all files in output and debug folder if already exist
+if len(os.listdir(output_folder)) > 0:
+    print("There is an image in the output folder")
+    file_exist = input("Press \"Y/y\" to continue deleting the output folder\n")
+    if file_exist == "Y" or file_exist == "y":
+        # Deleting files in the output folder and subdirectories
+        for root, dirs, files in os.walk(output_folder):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                os.remove(file_path)
+        for root, dirs, files in os.walk(debug_output):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                os.remove(file_path)
+        for root, dirs, files in os.walk(error_folder):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                os.remove(file_path)
+        print("Done Cleaning, continue the process")
+    else:
+        print("Exiting...")
+        quit()
+
 # Initialize progress bar
 progress_bar = tqdm(total=len(image_paths), desc="Processing images")
 
@@ -90,7 +114,7 @@ for image_path in image_paths:
             height = endY - startY
             
             # Check if the width or height is too small
-            if width < 64 or height < 64 or confidence < confidence_level:
+            if width < 32 or height < 32:
                 is_error = True
                 break
     
@@ -98,6 +122,9 @@ for image_path in image_paths:
     if is_error:
         # Copy the original image to the error images folder
         shutil.copy2(image_path, error_folder)
+
+        filename = os.path.splitext(os.path.basename(image_path))[0]
+        print(f"{filename} face to small, skipping")
         
         # Update progress bar
         progress_bar.update(1)
@@ -203,22 +230,42 @@ for image_path in image_paths:
                 debug_image_path = os.path.join(debug_output, f"{filename}_face_{i}.jpg")
                 cv2.imwrite(debug_image_path, debug_image)
 
-                # Define the desired maximum width of the preview window
-                max_window_width = 384
+                # Define the desired maximum and minimum width and height of the preview window
+                max_window_width = 768
+                max_window_height = 768
+                min_window_width = 400
+                min_window_height = 400
 
-                # Resize the debug image to fit within the maximum window width
+                # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
                 window_width = debug_image.shape[1]
                 window_height = debug_image.shape[0]
-                if window_width > max_window_width:
-                  scale_factor = max_window_width / window_width
-                  debug_image = cv2.resize(debug_image, None, fx=scale_factor, fy=scale_factor) # type: ignore
+                window_aspect_ratio = window_width / float(window_height)
+
+                if window_width > max_window_width or window_height > max_window_height:
+                    # Check if the width or height exceeds the maximum limits
+                    width_scale_factor = max_window_width / window_width
+                    height_scale_factor = max_window_height / window_height
+                    scale_factor = min(width_scale_factor, height_scale_factor)
+                else:
+                    # Check if the width or height is below the minimum limits
+                    width_scale_factor = min_window_width / window_width
+                    height_scale_factor = min_window_height / window_height
+                    scale_factor = max(width_scale_factor, height_scale_factor)
+
+                new_width = int(window_width * scale_factor)
+                new_height = int(window_height * scale_factor)
+
+                debug_image = cv2.resize(debug_image, (new_width, new_height))
 
                 # Show a preview window of the debug image and set it to stay on top
-                cv2.namedWindow("Debug Image", cv2.WINDOW_NORMAL)
+                cv2.namedWindow("Debug Image", cv2.WINDOW_AUTOSIZE)
                 cv2.imshow("Debug Image", debug_image)
                 cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
+                cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
 
-                cv2.waitKey(1)  # Add a small delay (1 millisecond) to allow the window to update
+                # print("Press any key on the window to continue")
+                cv2.waitKey(250)  # Wait until a key is pressed to exit the window
+                cv2.destroyAllWindows()  # Close all windows
 
                 # Save the cropped and resized image
                 output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
@@ -230,9 +277,9 @@ for image_path in image_paths:
 # Finish progress bar
 progress_bar.close()
 
-# Show the last processed image in the preview window until a key is pressed
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# # Show the last processed image in the preview window until a key is pressed
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 
 # Calculate the total number of input images
 total_images = len(image_paths)
@@ -241,9 +288,9 @@ total_images = len(image_paths)
 processed_images = total_images - (total_images - len(os.listdir(output_folder)) )
 
 # Calculate the number of skipped images
-skipped_images = total_images - len(os.listdir(output_folder)) # type: ignore
+error_images = total_images - len(os.listdir(output_folder)) # type: ignore
 
 # Print the statistics
 print(f"Total images: {total_images}")
 print(f"Processed images: {processed_images}")
-print(f"Skipped images: {skipped_images}")
+print(f"Error images: {error_images}")
