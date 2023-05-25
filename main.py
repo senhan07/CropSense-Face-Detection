@@ -50,7 +50,7 @@ elif option == 2:
     output_folder = output_face_folder
 elif option == 3:
     top_margin_value = 0.5
-    bottom_margin_value = 8
+    bottom_margin_value = 1
     debug_output = debug_fullbody_folder
     output_folder = output_fullbody_folder
 else:
