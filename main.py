@@ -23,6 +23,8 @@ os.makedirs("output/error_images", exist_ok=True)
 #Output cropped resolution (pixel)
 output_res = 1080
 
+confidence_level = 0.6
+
 # Get a list of input image paths
 input_folder = "input"
 output_upperbody_folder = "output/upperbody_cropped"
@@ -78,7 +80,7 @@ for image_path in image_paths:
         confidence = detections[0, 0, i, 2]
         
         # Filter out weak detections
-        if confidence > 0.6:
+        if confidence > confidence_level:
 
             box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
             (startX, startY, endX, endY) = box.astype(int)
@@ -88,7 +90,7 @@ for image_path in image_paths:
             height = endY - startY
             
             # Check if the width or height is too small
-            if width < 64 or height < 64:
+            if width < 64 or height < 64 or confidence < confidence_level:
                 is_error = True
                 break
     
@@ -106,7 +108,7 @@ for image_path in image_paths:
         confidence = detections[0, 0, i, 2]
         
         # Filter out weak detections
-        if confidence > 0.6:
+        if confidence > confidence_level:
             box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
             (startX, startY, endX, endY) = box.astype(int)
             
@@ -200,7 +202,24 @@ for image_path in image_paths:
                 filename = os.path.splitext(os.path.basename(image_path))[0]
                 debug_image_path = os.path.join(debug_output, f"{filename}_face_{i}.jpg")
                 cv2.imwrite(debug_image_path, debug_image)
-                
+
+                # Define the desired maximum width of the preview window
+                max_window_width = 384
+
+                # Resize the debug image to fit within the maximum window width
+                window_width = debug_image.shape[1]
+                window_height = debug_image.shape[0]
+                if window_width > max_window_width:
+                  scale_factor = max_window_width / window_width
+                  debug_image = cv2.resize(debug_image, None, fx=scale_factor, fy=scale_factor) # type: ignore
+
+                # Show a preview window of the debug image and set it to stay on top
+                cv2.namedWindow("Debug Image", cv2.WINDOW_NORMAL)
+                cv2.imshow("Debug Image", debug_image)
+                cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
+
+                cv2.waitKey(1)  # Add a small delay (1 millisecond) to allow the window to update
+
                 # Save the cropped and resized image
                 output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
                 cv2.imwrite(output_image_path, resized_image)
@@ -211,14 +230,18 @@ for image_path in image_paths:
 # Finish progress bar
 progress_bar.close()
 
+# Show the last processed image in the preview window until a key is pressed
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
 # Calculate the total number of input images
 total_images = len(image_paths)
 
 # Calculate the number of successfully processed images
-processed_images = total_images - len(os.listdir(error_folder))
+processed_images = total_images - (total_images - len(os.listdir(output_folder)) )
 
 # Calculate the number of skipped images
-skipped_images = len(os.listdir(error_folder))
+skipped_images = total_images - len(os.listdir(output_folder)) # type: ignore
 
 # Print the statistics
 print(f"Total images: {total_images}")
