@@ -1,5 +1,6 @@
 import cv2
 import os
+import time
 import shutil
 import imghdr
 import numpy as np
@@ -8,9 +9,9 @@ from tqdm import tqdm
 # Load the pre-trained s3fd face detection model
 net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
 
-# Set CUDA as the preferred backend and target
-net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+# # Set CUDA as the preferred backend and target
+# net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+# net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 # Create output folders for cropped images, debug images, and error images
 os.makedirs("output/upperbody_cropped", exist_ok=True)
@@ -23,7 +24,13 @@ os.makedirs("output/error_images", exist_ok=True)
 
 # Output cropped resolution (pixel)
 output_res = 1080
-output_debug_res = 768
+preview_output_res = 256
+preview_debug_res = 768
+
+# Minimun face bounding box size (pixel)
+min_face_res = 128
+min_upperbody_res = 96
+min_fullbody_res = 32
 
 # Set confidence level
 confidence_level = 0.8
@@ -39,63 +46,118 @@ debug_fullbody_folder = "output/fullbody_debug"
 error_folder = "output/error_images"
 image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
 
-# User input for selecting the option
-option = input("Select an option:\n1. Upper Body\n2. Face\n3. Full Body\n")
-show_preview = input("Show preview window? [Y]es/[N]o\n")
+# Set initial variable
+output_folder = ""
+debug_output = ""
+top_margin_value = ""
+bottom_margin_value = ""
+processed_images = 0
+boundingbox_class = 0
+error_count = 0
 
+# User input for selecting the crop size
+while True:
+    option = input("Select a crop type:\n1. Upper Body\n2. Face\n3. Full Body\nSelect: ")
+    if option not in ["1", "2", "3"]:
+        print("Invalid option selected. Please try again.")
+        print("")
+    else:
+        break
 # Define margin values based on the selected option
 if option == "1":
     top_margin_value = 0.5
     bottom_margin_value = 2.5
     debug_output = debug_upperbody_folder
     output_folder = output_upperbody_folder
+    boundingbox_class = 1
 elif option == "2":
     top_margin_value = 0.5
     bottom_margin_value = 0.5
     debug_output = debug_face_folder
     output_folder = output_face_folder
+    boundingbox_class = 2
 elif option == "3":
     top_margin_value = 0.5
     bottom_margin_value = 6
     debug_output = debug_fullbody_folder
     output_folder = output_fullbody_folder
-else:
-    print("Invalid option selected. Exiting.")
-    exit()
+    boundingbox_class = 3
 
-# Delete all files in output and debug folder if already exist
-if len(os.listdir(output_folder)) > 0:
-    # Check if the output folder is not empty
-    print("There is an image in the output folder")
-    file_exist = input("Continue deleting the output folder? [Y]es/[N]o\n")
-    if file_exist == "Y" or file_exist == "y":
-        # User confirms deletion
-        # Deleting files in the output folder and subdirectories
-        for root, dirs, files in os.walk(output_folder):
-            for file_name in files:
-                file_path = os.path.join(root, file_name)
-                os.remove(file_path)
-        for root, dirs, files in os.walk(debug_output):
-            for file_name in files:
-                file_path = os.path.join(root, file_name)
-                os.remove(file_path)
-        for root, dirs, files in os.walk(error_folder):
-            for file_name in files:
-                file_path = os.path.join(root, file_name)
-                os.remove(file_path)
-        print("Done Cleaning, continue the process")
+# User input for enabling preview window
+while True:
+    show_preview = input("Show preview window? [Y]es/[N]o: ")
+    if show_preview.lower() == "y":
+        show_preview = True
+        break
+    elif show_preview.lower() == "n":
+        show_preview = False
+        break
     else:
-        # User chooses not to delete
-        print("Exiting...")
-        quit()
+        print("Invalid option selected. Please enter 'Y' or 'N'.")
+        print("")
 
-error_count = 0
+# User input for deleting output folder
+while len(os.listdir(output_folder)) > 0:
+    # Check if the output folder is not empty
+    file_exist = input("Clean the output folder? [Y]es/[N]o: ")
+    if file_exist.lower() == "y":
+        print("Cleaning the output folder...")
+        
+        # Add a delay of 5 seconds before proceeding with the deletion
+        print("Deleting files in 5... [PRESS CTRL+C TO CANCEL]")
+        time.sleep(1)
+        print("Deleting files in 4... [PRESS CTRL+C TO CANCEL]")
+        time.sleep(1)
+        print("Deleting files in 3... [PRESS CTRL+C TO CANCEL]")
+        time.sleep(1)
+        print("Deleting files in 2... [PRESS CTRL+C TO CANCEL]")
+        time.sleep(1)
+        print("Deleting files in 1... [PRESS CTRL+C TO CANCEL]")
+        time.sleep(1)
+
+        # Get the total number of files
+        total_files = sum([len(files) for _, _, files in os.walk(output_folder)])
+
+        # Deleting files in the output folder and subdirectories with a progress bar
+        with tqdm(total=total_files, unit='file') as pbar:
+            for root, dirs, files in os.walk(output_folder):
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    os.remove(file_path)
+                    pbar.update(1)
+
+        with tqdm(total=total_files, unit='file') as pbar:
+            for root, dirs, files in os.walk(debug_output):
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    os.remove(file_path)
+                    pbar.update(1)
+
+        with tqdm(total=total_files, unit='file') as pbar:
+            for root, dirs, files in os.walk(error_folder):
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    os.remove(file_path)
+                    pbar.update(1)
+
+        print("Done cleaning the output folder.")
+        print("")
+    elif file_exist.lower() == "n":
+        print("")
+        break  # Exit the while loop
+    else:
+        print("Invalid option selected. Please enter 'Y' or 'N'.")
+        print("")
+
+print("Starting...")
 
 # Initialize progress bar
 progress_bar = tqdm(total=len(image_paths), desc="Processing images")
 
 # Process each image
 for image_path in image_paths:
+    filename, extension = os.path.splitext(os.path.basename(image_path))
+
     # Load the image
     image = cv2.imread(image_path)
 
@@ -115,13 +177,20 @@ for image_path in image_paths:
         net.setInput(blob)
         detections = net.forward()
 
-        # Flag to check if the face is error
-        is_error = False
+        def images_error():
+            # Copy the original image to the error images folder
+            shutil.copy2(image_path, error_folder)
 
         # Check if the face is error
         for i in range(detections.shape[2]):
             confidence = detections[0, 0, i, 2]
 
+            # Check if the face bellow the confidence level
+            if confidence < confidence_level:
+                print(f"\n{filename}{extension} confidence level to low ({int(confidence * 100)}%), skipping...")
+                images_error()
+                error_count += 1
+                break
 
             # Filter out weak detections
             if confidence > confidence_level:
@@ -134,41 +203,24 @@ for image_path in image_paths:
                 height = endY - startY
 
                 # Check if the width or height is too small
-                if option == 1 or option == 2:
-                    if width < 32 or height < 32:
-                        is_error = True
+                if boundingbox_class == 3:
+                    if width < min_fullbody_res or height < min_fullbody_res:
+                        print(f"\n{filename}{extension} face to small for fullbody crop, skipping...")
+                        images_error()
+                        error_count += 1
                         break
-                else:
-                    if width < 16 or height < 16:
-                        is_error = True
+                elif boundingbox_class == 2:
+                    if width < min_face_res or height < min_face_res:
+                        print(f"\n{filename}{extension} face to small for face crop, skipping...")
+                        images_error()
+                        error_count += 1
                         break
-             
-        # Skip the image if the face is error
-        if is_error:
-            # Copy the original image to the error images folder
-            shutil.copy2(image_path, error_folder)
-    
-            filename, extension = os.path.splitext(os.path.basename(image_path))
-            print(f"\n{filename}{extension} face to small, skipping")
-            
-            error_count += 1
-
-            # Update progress bar
-            progress_bar.update(1)
-            continue
-    
-        # Crop and resize upper body for each detected face
-        for i in range(detections.shape[2]):
-            confidence = detections[0, 0, i, 2]
-
-            # Filter out weak detections
-            if confidence > confidence_level:
-                box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
-                (startX, startY, endX, endY) = box.astype(int)
-
-                # Calculate the width and height of the bounding box
-                width = endX - startX
-                height = endY - startY
+                elif boundingbox_class == 1:
+                    if width < min_upperbody_res or height < min_upperbody_res:
+                        print(f"\n{filename}{extension} face to small for upperbody crop, skipping...")
+                        images_error()
+                        error_count += 1
+                        break
 
                 # Calculate the margin based on the height of the bounding box
                 top_margin_percent = int(height * top_margin_value) 
@@ -215,8 +267,8 @@ for image_path in image_paths:
                     resolution_text = f"{image.shape[1]}x{image.shape[0]} face_{i} ({int(confidence * 100)}%)"
 
                     # Set the background color and text color
-                    background_color = (255, 255, 0)  # Black color for the background
-                    text_color = (0, 0, 0)  # White color for the text
+                    background_color = (255, 255, 0)  # Cyan color for the background
+                    text_color = (0, 0, 0)  # Black color for the text
 
                     # Calculate the font scale based on the image resolution
                     font_scale = min(image.shape[1], image.shape[0]) / 1000
@@ -249,7 +301,7 @@ for image_path in image_paths:
                     # Overlay the background with the text on the debug image
                     debug_image[0:background_height, 0:background_width] = background
 
-                    max_size = output_debug_res
+                    max_size = preview_debug_res
                     # Calculate the new width and height while preserving the aspect ratio
                     width = image.shape[1]
                     height = image.shape[0]
@@ -271,16 +323,17 @@ for image_path in image_paths:
 
                     # Save the cropped and resized image
                     output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
-                    cv2.imwrite(output_image_path, resized_image)
+                    if cv2.imwrite(output_image_path, resized_image):
+                        processed_images += 1
 
-                    if show_preview == "Y" or show_preview == "y":
+                    if show_preview == True:
                         # Define the desired maximum and minimum width and height of the preview window
                         debug_max_window_width = 768
                         debug_max_window_height = 768
                         debug_min_window_width = 400
                         debug_min_window_height = 400
     
-                        output_preview_res = 128
+                        output_preview_res = preview_output_res
     
                         # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
                         window_width = debug_image.shape[1]
@@ -301,8 +354,6 @@ for image_path in image_paths:
     
                         new_width = int(window_width * scale_factor)
                         new_height = int(window_height * scale_factor)
-                        # resized_new_width = int(window_width * resized_scale_factor)
-                        # resized_new_height = int(window_height * resized_scale_factor)
     
                         debug_preview_image = cv2.resize(debug_image, (new_width, new_height))
                         output_preview_image = cv2.resize(resized_image, (output_preview_res, output_preview_res))
@@ -313,14 +364,15 @@ for image_path in image_paths:
                         cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
                         cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
     
-                        # Show a preview window of the debug image and set it to stay on top
+                        # Show a preview window of the output image and set it to stay on top
                         cv2.namedWindow("Output Image", cv2.WINDOW_AUTOSIZE)
                         cv2.imshow("Output Image", output_preview_image)
                         cv2.setWindowProperty("Output Image", cv2.WND_PROP_TOPMOST, 1)
                         cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
                         
-                        cv2.waitKey(1)  # Wait until a key is pressed to exit the window
-                
+                        cv2.waitKey(250)  # Wait time     
+            break  
+
     # Update progress bar
     progress_bar.update(1)
 
@@ -333,11 +385,7 @@ cv2.destroyAllWindows()
 # Calculate the total number of input images
 total_images = len(image_paths)
 
-# Calculate the number of successfully processed images
-processed_images = total_images - (total_images - len(os.listdir(output_folder)) )
-
-# Calculate the number of skipped images
-error_images = max(0, total_images - len(os.listdir(output_folder)))
+processed_images = total_images - error_count
 
 # Print the statistics
 print(f"Total images: {total_images}")
