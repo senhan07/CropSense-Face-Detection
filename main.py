@@ -221,6 +221,19 @@ for image_path in image_paths:
                         images_error()
                         error_count += 1
                         break
+            break
+        # Crop and resize upper body for each detected face
+        for i in range(detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+
+            # Filter out weak detections
+            if confidence > confidence_level:
+                box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
+                (startX, startY, endX, endY) = box.astype(int)
+
+                # Calculate the width and height of the bounding box
+                width = endX - startX
+                height = endY - startY
 
                 # Calculate the margin based on the height of the bounding box
                 top_margin_percent = int(height * top_margin_value) 
@@ -371,7 +384,7 @@ for image_path in image_paths:
                         cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
                         
                         cv2.waitKey(250)  # Wait time     
-            break  
+
 
     # Update progress bar
     progress_bar.update(1)
