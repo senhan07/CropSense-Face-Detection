@@ -40,20 +40,21 @@ error_folder = "output/error_images"
 image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
 
 # User input for selecting the option
-option = int(input("Select an option:\n1. Upper Body\n2. Face\n3. Full Body\n"))
+option = input("Select an option:\n1. Upper Body\n2. Face\n3. Full Body\n")
+show_preview = input("Show preview window? [Y]es/[N]o\n")
 
 # Define margin values based on the selected option
-if option == 1:
+if option == "1":
     top_margin_value = 0.5
     bottom_margin_value = 2.5
     debug_output = debug_upperbody_folder
     output_folder = output_upperbody_folder
-elif option == 2:
+elif option == "2":
     top_margin_value = 0.5
     bottom_margin_value = 0.5
     debug_output = debug_face_folder
     output_folder = output_face_folder
-elif option == 3:
+elif option == "3":
     top_margin_value = 0.5
     bottom_margin_value = 6
     debug_output = debug_fullbody_folder
@@ -66,7 +67,7 @@ else:
 if len(os.listdir(output_folder)) > 0:
     # Check if the output folder is not empty
     print("There is an image in the output folder")
-    file_exist = input("Press \"Y/y\" to continue deleting the output folder\n")
+    file_exist = input("Continue deleting the output folder? [Y]es/[N]o\n")
     if file_exist == "Y" or file_exist == "y":
         # User confirms deletion
         # Deleting files in the output folder and subdirectories
@@ -272,40 +273,53 @@ for image_path in image_paths:
                     output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
                     cv2.imwrite(output_image_path, resized_image)
 
-                    # Define the desired maximum and minimum width and height of the preview window
-                    max_window_width = 768
-                    max_window_height = 768
-                    min_window_width = 400
-                    min_window_height = 400
-
-                    # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
-                    window_width = debug_image.shape[1]
-                    window_height = debug_image.shape[0]
-                    window_aspect_ratio = window_width / float(window_height)
-
-                    if window_width > max_window_width or window_height > max_window_height:
-                        # Check if the width or height exceeds the maximum limits
-                        width_scale_factor = max_window_width / window_width
-                        height_scale_factor = max_window_height / window_height
-                        scale_factor = min(width_scale_factor, height_scale_factor)
-                    else:
-                        # Check if the width or height is below the minimum limits
-                        width_scale_factor = min_window_width / window_width
-                        height_scale_factor = min_window_height / window_height
-                        scale_factor = max(width_scale_factor, height_scale_factor)
-
-                    new_width = int(window_width * scale_factor)
-                    new_height = int(window_height * scale_factor)
-
-                    debug_image = cv2.resize(debug_image, (new_width, new_height))
-
-                    # Show a preview window of the debug image and set it to stay on top
-                    cv2.namedWindow("Debug Image", cv2.WINDOW_AUTOSIZE)
-                    cv2.imshow("Debug Image", debug_image)
-                    cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
-                    cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
-
-                    cv2.waitKey(1)  # Wait until a key is pressed to exit the window
+                    if show_preview == "Y" or show_preview == "y":
+                        # Define the desired maximum and minimum width and height of the preview window
+                        debug_max_window_width = 768
+                        debug_max_window_height = 768
+                        debug_min_window_width = 400
+                        debug_min_window_height = 400
+    
+                        output_preview_res = 128
+    
+                        # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
+                        window_width = debug_image.shape[1]
+                        window_height = debug_image.shape[0]
+                        window_aspect_ratio = window_width / float(window_height)
+    
+                        # Debug preview images
+                        if window_width > debug_max_window_width or window_height > debug_max_window_height:
+                            # Check if the width or height exceeds the maximum limits
+                            width_scale_factor = debug_max_window_width / window_width
+                            height_scale_factor = debug_max_window_height / window_height
+                            scale_factor = min(width_scale_factor, height_scale_factor)
+                        else:
+                            # Check if the width or height is below the minimum limits
+                            width_scale_factor = debug_min_window_width / window_width
+                            height_scale_factor = debug_min_window_height / window_height
+                            scale_factor = max(width_scale_factor, height_scale_factor)
+    
+                        new_width = int(window_width * scale_factor)
+                        new_height = int(window_height * scale_factor)
+                        # resized_new_width = int(window_width * resized_scale_factor)
+                        # resized_new_height = int(window_height * resized_scale_factor)
+    
+                        debug_preview_image = cv2.resize(debug_image, (new_width, new_height))
+                        output_preview_image = cv2.resize(resized_image, (output_preview_res, output_preview_res))
+    
+                        # Show a preview window of the debug image and set it to stay on top
+                        cv2.namedWindow("Debug Image", cv2.WINDOW_AUTOSIZE)
+                        cv2.imshow("Debug Image", debug_preview_image)
+                        cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
+                        cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
+    
+                        # Show a preview window of the debug image and set it to stay on top
+                        cv2.namedWindow("Output Image", cv2.WINDOW_AUTOSIZE)
+                        cv2.imshow("Output Image", output_preview_image)
+                        cv2.setWindowProperty("Output Image", cv2.WND_PROP_TOPMOST, 1)
+                        cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
+                        
+                        cv2.waitKey(1)  # Wait until a key is pressed to exit the window
                 
     # Update progress bar
     progress_bar.update(1)
