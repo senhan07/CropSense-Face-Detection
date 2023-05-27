@@ -205,19 +205,19 @@ for image_path in image_paths:
                 # Check if the width or height is too small
                 if boundingbox_class == 3:
                     if width < min_fullbody_res or height < min_fullbody_res:
-                        print(f"\rFace is too small for fullbody crop, skipping {filename}{extension}")
+                        print(f"\rFace resolution is too small for fullbody crop, skipping {filename}{extension}")
                         images_error()
                         error_count += 1
                         break
                 elif boundingbox_class == 2:
                     if width < min_face_res or height < min_face_res:
-                        print(f"\rFace is too small for face crop, skipping {filename}{extension}")
+                        print(f"\rFace resolution is too small for face crop, skipping {filename}{extension}")
                         images_error()
                         error_count += 1
                         break
                 elif boundingbox_class == 1:
                     if width < min_upperbody_res or height < min_upperbody_res:
-                        print(f"\rFace is too small for upperbody crop, skipping {filename}{extension}")
+                        print(f"\rFace resolution is too small for upperbody crop, skipping {filename}{extension}")
                         images_error()
                         error_count += 1
                         break
