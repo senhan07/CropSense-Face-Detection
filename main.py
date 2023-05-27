@@ -3,6 +3,7 @@ import os
 import time
 import shutil
 import imghdr
+import win32com.client
 import numpy as np
 from tqdm import tqdm
 
@@ -152,7 +153,7 @@ while len(os.listdir(output_folder)) > 0:
 print("Starting...")
 
 # Initialize progress bar
-progress_bar = tqdm(total=len(image_paths))
+progress_bar = tqdm(total=len(image_paths), desc="Processing images")
 
 # Process each image
 for image_path in image_paths:
@@ -168,7 +169,6 @@ for image_path in image_paths:
     supported_formats = ["jpg", "jpeg", "png", "webp"]  # Add more formats as needed
     
     if image_format is None or image_format not in supported_formats:
-        filename, extension = os.path.splitext(os.path.basename(image_path))
         print(f"\rInvalid image format or unsupported format, skipping {filename}{extension}")
         error_count += 1
     else:
@@ -178,8 +178,23 @@ for image_path in image_paths:
         detections = net.forward()
 
         def images_error():
-            # Copy the original image to the error images folder
-            shutil.copy2(image_path, error_folder)
+            # Create a shell object
+            shell = win32com.client.Dispatch("WScript.Shell")
+
+            # Get the filename from the original path
+            filename_shortcut = os.path.basename(image_path)
+            
+            # # Create the shortcut path
+            shortcut_path = os.path.join(error_folder, filename_shortcut + ".lnk")
+
+            # Create a shortcut object
+            shortcut = shell.CreateShortcut(shortcut_path)
+            
+            # Set the target path of the shortcut
+            shortcut.TargetPath = os.path.abspath(image_path)
+            
+            # Save the shortcut
+            shortcut.Save()
 
         # Check if the face is error
         for i in range(detections.shape[2]):
@@ -385,8 +400,6 @@ for image_path in image_paths:
                         
                         cv2.waitKey(250)  # Wait time     
 
-    # Update progress bar
-    progress_bar.set_description(f'Error images: {error_count}, Processing images')
     progress_bar.update(1)
 
 # Finish progress bar
