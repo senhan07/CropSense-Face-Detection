@@ -29,12 +29,12 @@ preview_output_res = 256
 preview_debug_res = 768
 
 # Minimun face bounding box size (pixel)
-min_face_res = 128
-min_upperbody_res = 96
+min_face_res = 96
+min_upperbody_res = 64
 min_fullbody_res = 32
 
 # Set confidence level
-confidence_level = 0.8
+confidence_level = 0.5
 
 # Get a list of input image paths
 input_folder = "input"
