@@ -152,7 +152,7 @@ while len(os.listdir(output_folder)) > 0:
 print("Starting...")
 
 # Initialize progress bar
-progress_bar = tqdm(total=len(image_paths), desc="Processing images")
+progress_bar = tqdm(total=len(image_paths))
 
 # Process each image
 for image_path in image_paths:
@@ -385,8 +385,8 @@ for image_path in image_paths:
                         
                         cv2.waitKey(250)  # Wait time     
 
-
     # Update progress bar
+    progress_bar.set_description(f'Error images: {error_count}, Processing images')
     progress_bar.update(1)
 
 # Finish progress bar
