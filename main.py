@@ -169,7 +169,7 @@ for image_path in image_paths:
     
     if image_format is None or image_format not in supported_formats:
         filename, extension = os.path.splitext(os.path.basename(image_path))
-        print(f"\n{filename}{extension} has an invalid image format or unsupported format.")
+        print(f"\r{filename}{extension} has an invalid image format or unsupported format.")
         error_count += 1
     else:
         # Perform face detection
@@ -187,7 +187,7 @@ for image_path in image_paths:
 
             # Check if the face bellow the confidence level
             if confidence < confidence_level:
-                print(f"\n{filename}{extension} confidence level to low ({int(confidence * 100)}%), skipping...")
+                print(f"\r{filename}{extension} confidence level to low ({int(confidence * 100)}%), skipping...")
                 images_error()
                 error_count += 1
                 break
@@ -205,19 +205,19 @@ for image_path in image_paths:
                 # Check if the width or height is too small
                 if boundingbox_class == 3:
                     if width < min_fullbody_res or height < min_fullbody_res:
-                        print(f"\n{filename}{extension} face to small for fullbody crop, skipping...")
+                        print(f"\r{filename}{extension} face to small for fullbody crop, skipping...")
                         images_error()
                         error_count += 1
                         break
                 elif boundingbox_class == 2:
                     if width < min_face_res or height < min_face_res:
-                        print(f"\n{filename}{extension} face to small for face crop, skipping...")
+                        print(f"\r{filename}{extension} face to small for face crop, skipping...")
                         images_error()
                         error_count += 1
                         break
                 elif boundingbox_class == 1:
                     if width < min_upperbody_res or height < min_upperbody_res:
-                        print(f"\n{filename}{extension} face to small for upperbody crop, skipping...")
+                        print(f"\r{filename}{extension} face to small for upperbody crop, skipping...")
                         images_error()
                         error_count += 1
                         break
