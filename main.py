@@ -66,20 +66,20 @@ while True:
         break
 # Define margin values based on the selected option
 if option == "1":
-    top_margin_value = 0.5
-    bottom_margin_value = 2.5
+    top_margin_value = 1
+    bottom_margin_value = 3
     debug_output = debug_upperbody_folder
     output_folder = output_upperbody_folder
     boundingbox_class = 1
 elif option == "2":
-    top_margin_value = 0.5
-    bottom_margin_value = 0.5
+    top_margin_value = 1
+    bottom_margin_value = 1
     debug_output = debug_face_folder
     output_folder = output_face_folder
     boundingbox_class = 2
 elif option == "3":
-    top_margin_value = 0.5
-    bottom_margin_value = 6
+    top_margin_value = 3
+    bottom_margin_value = 5
     debug_output = debug_fullbody_folder
     output_folder = output_fullbody_folder
     boundingbox_class = 3
@@ -252,29 +252,41 @@ for image_path in image_paths:
                     width = endX - startX
                     height = endY - startY
 
-                    # Calculate the margin based on the height of the bounding box
-                    top_margin_percent = int(height * top_margin_value) 
-                    bottom_margin_percent = int(height * bottom_margin_value)
-                    left_margin_percent = bottom_margin_percent
-                    right_margin_percent = bottom_margin_percent
-
-                    # Calculate the coordinates of the upper body region
-                    upper_left_x = max(startX - left_margin_percent, 0)
-                    upper_left_y = max(startY - top_margin_percent, 0)
-                    lower_right_x = min(endX + right_margin_percent, image.shape[1])
-                    lower_right_y = min(endY + bottom_margin_percent, image.shape[0])
-
                     # Calculate the size of the square region to be cropped
-                    size = min(lower_right_x - upper_left_x, lower_right_y - upper_left_y)
+                    square_size = min(endX - startX, endY - startY)
 
                     # Calculate the coordinates for the square region
-                    square_upper_left_x = (lower_right_x + upper_left_x) // 2 - size // 2
-                    square_upper_left_y = (lower_right_y + upper_left_y) // 2 - size // 2
-                    square_lower_right_x = square_upper_left_x + size
-                    square_lower_right_y = square_upper_left_y + size
+                    square_upper_left_x = (endX + startX) // 2 - square_size // 2
+                    square_upper_left_y = (endY + startY) // 2 - square_size // 2
+                    square_lower_right_x = square_upper_left_x + square_size
+                    square_lower_right_y = square_upper_left_y + square_size
 
-                    # Crop the upper body region as a square
-                    square_region = image[square_upper_left_y:square_lower_right_y, square_upper_left_x:square_lower_right_x]
+                    # SECOND BOX MARGIN
+                    width_square = square_lower_right_x - square_upper_left_x
+                    height_square = square_lower_right_y - square_upper_left_y
+
+                    # Calculate the margin based on the height of the bounding box
+                    top_margin_percent = int(height_square * top_margin_value) 
+                    bottom_margin_percent = int(height_square * bottom_margin_value)
+                    left_margin_percent = bottom_margin_percent
+                    right_margin_percent = bottom_margin_percent
+                    
+                    # Calculate the coordinates of the upper body region
+                    upper_left_x = max(square_upper_left_x - left_margin_percent, 0)
+                    upper_left_y = max(square_upper_left_y - top_margin_percent, 0)
+                    lower_right_x = min(square_lower_right_x + right_margin_percent, image.shape[1])
+                    lower_right_y = min(square_lower_right_y + bottom_margin_percent, image.shape[0])
+                    
+                    square_margin_size = min(lower_right_x - upper_left_x, lower_right_y - upper_left_y)
+
+                    # Calculate the coordinates for the square region
+                    square_margin_upper_left_x = (lower_right_x + upper_left_x) // 2 - square_margin_size // 2
+                    square_margin_upper_left_y = (lower_right_y + upper_left_y) // 2 - square_margin_size // 2
+                    square_margin_lower_right_x = square_margin_upper_left_x + square_margin_size
+                    square_margin_lower_right_y = square_margin_upper_left_y + square_margin_size
+
+                    # Cropped image
+                    square_region = image[square_margin_upper_left_y:square_margin_lower_right_y, square_margin_upper_left_x:square_margin_lower_right_x]
 
                     # Check if the square region is valid (not empty)
                     if square_region.size == 0:
@@ -290,11 +302,13 @@ for image_path in image_paths:
                     if endX - startX > 0 and endY - startY > 0:
                         # Draw rectangle on debug image
                         debug_image = image.copy()
+                        
                         cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) #face rectangle
                         cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) #crop rectagle
+                        cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y), (square_margin_lower_right_x, square_margin_lower_right_y), (255, 165, 0), thickness)
 
                         # Add text label with original image resolution and confidence level
-                        resolution_text = f"{image.shape[1]}x{image.shape[0]} face_{i} ({int(confidence * 100)}%)"
+                        resolution_text = f"{image.shape[1]}x{image.shape[0]} face_{i}_{width_square}px ({int(confidence * 100)}%)"
 
                         # Set the background color and text color
                         background_color = (255, 255, 0)  # Cyan color for the background
