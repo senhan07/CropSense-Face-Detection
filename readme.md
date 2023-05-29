@@ -1,22 +1,22 @@
 # CropSense - Face Detection
 
-It is a script to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping based on the detected regions into 1:1 ratio
+CropSense is a script to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping into 1:1 ratio based on the detected regions
 
 It proves to be particularly useful in scenarios where you need make a dataset for training a model, it's not perfect yet :)
 
+### Demo
+![Demod](demo.gif "Demo")
 
-## Key Features:
-- Flexible Crop Options: The script provides three different crop options: upper body, face, and full body. This flexibility allows you to choose the specific region you want to focus on, depending on your requirements.
+## Features:
+- 🖼️ **Flexible Crop Options**: Choose from three crop options: upper body, face, or full body. Select the perfect region you want to highlight and let the script do the magic!
 
-- Highly Accurate Face Detection: By utilizing the pre-trained s3fd face detection model, the Image Cropper script achieves reliable and accurate face detection. It can handle various face angles, lighting conditions, and occlusions, ensuring that the cropping is performed precisely around the detected faces.
+- 🔍 **Accurate Face Detection:** By utilizing the pre-trained s3fd face detection model, the script achieves reliable and accurate face detection. It can handle various face angles, lighting conditions, and occlusions, ensuring that the cropping is performed precisely around the detected faces.
 
-- Efficient Batch Processing: Whether you have a few images or a large collection, the script is designed to process them efficiently. By automating the cropping process, you can save significant time and effort compared to manual cropping.
+- ⏱️ **Effortless Batch Processing:** Whether you have a few images or a whole bunch, this script is designed to handle them all in a jiffy. Say goodbye to manual cropping and hello to lightning-fast automation!
 
-- Visual Preview Option: The script offers the option to display a preview window, allowing you to visualize the detected bounding boxes before the cropping takes place. This feature gives you a chance to verify and adjust the crop regions, ensuring the desired areas are selected accurately.
+- 🐞 **Debugging Made Easy:** With built-in debugging capabilities, the script saves debug images with bounding boxes, making it a breeze to troubleshoot and ensure your crops are picture-perfect. Any images that couldn't be processed are saved separately for your convenience.
 
-- Debugging and Error Handling: The Image Cropper script includes debugging capabilities by saving debug images with bounding boxes. This helps in assessing the accuracy of the face detection and crop regions. Additionally, any images that couldn't be processed or had a low confidence level are saved separately in an error folder for further analysis.
-
-- Customizable Parameters: The script provides configurable parameters to adjust various settings, including output resolution, minimum bounding box sizes for different regions, confidence level for face detection, and folder paths for input and output directories. This allows you to fine-tune the cropping process according to your specific needs.
+- 🎛️ **Customize to Your Liking:** Tweak the script to match your preferences! Adjust output resolution, minimum bounding box sizes, confidence levels, and folder paths. Make it your own and create stunning visuals!
 
 ## Prerequisites
 
@@ -29,16 +29,17 @@ It proves to be particularly useful in scenarios where you need make a dataset f
 ## Installation
 
 1. Clone this repository:
-`git clone https://github.com/senhan07/image-cropper.git`
+`git clone https://github.com/senhan07/CropSense-Face Detection.git`
 
+2. Navigate to the project directory:
+`cd CropSense-Face Detection`
 
-2. Install the required packages:
+3. Install the required packages:
 `pip install -r requirements.txt`
-
 
 ## Usage
 
-1. Place your input images in the `input` folder.
+1. Place your input images in the `input` folder (just create a folder if doesn't exist).
 2. Run the script: `python main.py`
 
 3. Follow the prompts to select the crop type (1 for upper body, 2 for face, 3 for full body) and choose whether to show a preview window.
@@ -47,7 +48,6 @@ It proves to be particularly useful in scenarios where you need make a dataset f
 6. The cropped images will be saved in the respective output folders (`output/upperbody_cropped`, `output/face_cropped`, `output/fullbody_cropped`).
 7. Debug images with bounding boxes will be saved in the debug folders (`output/upperbody_debug`, `output/face_debug`, `output/fullbody_debug`).
 8. Any images that couldn't be processed or had low confidence level will be created as shorcut in the `output/error_images` folder.
-9. The script will display progress bars and provide updates during the processing.
 
 ## Configuration
 
@@ -70,13 +70,9 @@ You can customize the following settings in the script:
 - `error_folder`: Folder for error images.
 - `cv2.waitKey(250)` Delay time for displaying preview image in (milliseconds)
 
+## Contributing
+Contributions to the project are welcome. If you find any issues or would like to suggest improvements, please create a new issue or submit a pull request.
+
 ## License
 
 This script is licensed under the [MIT License](LICENSE).
-
-## Acknowledgments
-
-- Created with my fingers and ChatGPT
-- The s3fd face detection model used in this script is based on the [S3FD.pytorch](https://github.com/polarisZhao/S3FD.pytorch) repository.
-- Progress bar implementation using [tqdm](https://github.com/tqdm/tqdm).
-- Image processing using [OpenCV](https://github.com/opencv/opencv).
