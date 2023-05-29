@@ -100,10 +100,8 @@ while True:
 # User input for deleting output folder
 while len(os.listdir(output_folder)) > 0:
     # Check if the output folder is not empty
-    file_exist = input("Clean the output folder? [Y]es/[N]o: ")
+    file_exist = input("Output folders are not empty,  clean it? [Y]es/[N]o: ")
     if file_exist.lower() == "y":
-        print("Cleaning the output folder...")
-        
         # Add a delay of 5 seconds before proceeding with the deletion
         print("Deleting files in 5... [PRESS CTRL+C TO CANCEL]")
         time.sleep(1)
