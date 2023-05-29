@@ -1,6 +1,6 @@
-# Image Cropper
+# CropSense - Face Detection
 
-It is a versatile tool that enables you to crop images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping based on the detected regions into 1:1 ratio
+It is a script to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping based on the detected regions into 1:1 ratio
 
 It proves to be particularly useful in scenarios where you need make a dataset for training a model, it's not perfect yet :)
 
@@ -76,6 +76,7 @@ This script is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
+- Created with my fingers and ChatGPT
 - The s3fd face detection model used in this script is based on the [S3FD.pytorch](https://github.com/polarisZhao/S3FD.pytorch) repository.
 - Progress bar implementation using [tqdm](https://github.com/tqdm/tqdm).
 - Image processing using [OpenCV](https://github.com/opencv/opencv).
