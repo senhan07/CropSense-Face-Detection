@@ -356,7 +356,7 @@ for image_path in image_paths:
                             new_width = int(width * new_height / height)
 
                         # Resize the image
-                        debug_image = cv2.resize(debug_image, (new_width, new_height))
+                        # debug_image = cv2.resize(debug_image, (new_width, new_height))
 
                         # Save the debug image with rectangle and label
                         filename = os.path.splitext(os.path.basename(image_path))[0]
