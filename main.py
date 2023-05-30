@@ -329,21 +329,6 @@ for image_path in image_paths:
                 # Overlay the background with the text on the debug image
                 debug_image[0:background_height, 0:background_width] = background
 
-                # max_size = preview_debug_max_res
-                # # Calculate the new width and height while preserving the aspect ratio
-                # width = image.shape[1]
-                # height = image.shape[0]
-
-                # if width > height:
-                #     new_width = min(width, max_size)
-                #     new_height = int(height * new_width / width)
-                # else:
-                #     new_height = min(height, max_size)
-                #     new_width = int(width * new_height / height)
-
-                # Resize the image
-                # debug_image = cv2.resize(debug_image, (new_width, new_height))
-
                 # Save the debug image with rectangle and label
                 filename = os.path.splitext(os.path.basename(image_path))[0]
                 debug_image_path = os.path.join(debug_output, f"{filename}_face_{i}.jpg")
