@@ -10,9 +10,9 @@ from tqdm import tqdm
 # Load the pre-trained s3fd face detection model
 net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
 
-# # Set CUDA as the preferred backend and target
-# net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-# net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+# Set CUDA as the preferred backend and target
+net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 # Create output folders for cropped images, debug images, and error images
 os.makedirs("output/upperbody_cropped", exist_ok=True)
@@ -38,7 +38,7 @@ min_fullbody_res = 32
 confidence_level = 0.5
 
 # Get a list of input image paths
-input_folder = "input"
+# input_folder = "input"
 output_upperbody_folder = "output/upperbody_cropped"
 debug_upperbody_folder = "output/upperbody_debug"
 output_face_folder = "output/face_cropped"
@@ -46,7 +46,7 @@ debug_face_folder = "output/face_debug"
 output_fullbody_folder = "output/fullbody_cropped"
 debug_fullbody_folder = "output/fullbody_debug"
 error_folder = "output/error_images"
-image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
+# image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
 
 # Set initial variable
 output_folder = ""
@@ -157,6 +157,7 @@ progress_bar = tqdm(total=len(image_paths), desc="Processing images")
 # Process each image
 for image_path in image_paths:
     is_error = False
+
     filename, extension = os.path.splitext(os.path.basename(image_path))
 
     # Load the image
@@ -172,51 +173,27 @@ for image_path in image_paths:
         print(f"\rInvalid image format or unsupported format, skipping {filename}{extension}")
         error_count += 1
     else:
-        def images_error():
-            # Create a shell object
-            shell = win32com.client.Dispatch("WScript.Shell")
-
-            # Get the filename from the original path
-            filename_shortcut = os.path.basename(image_path)
-            
-            # # Create the shortcut path
-            shortcut_path = os.path.join(error_folder, filename_shortcut + ".lnk")
-
-            # Create a shortcut object
-            shortcut = shell.CreateShortcut(shortcut_path)
-            
-            # Set the target path of the shortcut
-            shortcut.TargetPath = os.path.abspath(image_path)
-            
-            # Save the shortcut
-            shortcut.Save()
-
-        # Check the image if above 300px
-        if image.shape[0] > 300 or image.shape[1] > 300:
+        # Check the image if below 300px
+        if image.shape[0] < 300 or image.shape[1] < 300:
+            print(f"\rThe resolution is too low for face detection, skipping {filename}{extension}")
+            images_error()
+            error_count += 1
+        else:
             # Perform face detection
             blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
             net.setInput(blob)
             detections = net.forward()
-
             # Check if the face is error
             for i in range(detections.shape[2]):
                 confidence = detections[0, 0, i, 2]
 
                 # Check if the face bellow the confidence level
-                if confidence < confidence_level:
-                    print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping {filename}{extension}")
-                    images_error()
-                    is_error = True
-                    error_count += 1
-                    break
-
-                # Filter out weak detections
                 if confidence > confidence_level:
-
+                    # Filter out weak detections
                     box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
                     (startX, startY, endX, endY) = box.astype(int)
 
-                    # Calculate the width and height of the bounding box
+            #         # Calculate the width and height of the bounding box
                     width = endX - startX
                     height = endY - startY
 
@@ -242,188 +219,182 @@ for image_path in image_paths:
                             is_error = True
                             error_count += 1
                             break
-                break
-            # Crop and resize upper body for each detected face
-            for i in range(detections.shape[2]):
-                confidence = detections[0, 0, i, 2]
-
-                # Filter out weak detections
-                if confidence > confidence_level:
+                else:
                     box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
                     (startX, startY, endX, endY) = box.astype(int)
 
                     # Calculate the width and height of the bounding box
                     width = endX - startX
                     height = endY - startY
-
-                    # Calculate the size of the square region to be cropped
-                    square_size = min(endX - startX, endY - startY)
-
-                    # Calculate the coordinates for the square region
-                    square_upper_left_x = (endX + startX) // 2 - square_size // 2
-                    square_upper_left_y = (endY + startY) // 2 - square_size // 2
-                    square_lower_right_x = square_upper_left_x + square_size
-                    square_lower_right_y = square_upper_left_y + square_size
-
-                    # SECOND BOX MARGIN
-                    width_square = square_lower_right_x - square_upper_left_x
-                    height_square = square_lower_right_y - square_upper_left_y
-
-                    # Calculate the margin based on the height of the bounding box
-                    top_margin_percent = int(height_square * top_margin_value) 
-                    bottom_margin_percent = int(height_square * bottom_margin_value)
-                    left_margin_percent = bottom_margin_percent
-                    right_margin_percent = bottom_margin_percent
                     
-                    # Calculate the coordinates of the upper body region
-                    upper_left_x = max(square_upper_left_x - left_margin_percent, 0)
-                    upper_left_y = max(square_upper_left_y - top_margin_percent, 0)
-                    lower_right_x = min(square_lower_right_x + right_margin_percent, image.shape[1])
-                    lower_right_y = min(square_lower_right_y + bottom_margin_percent, image.shape[0])
-                    
-                    square_margin_size = min(lower_right_x - upper_left_x, lower_right_y - upper_left_y)
+                    print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping {filename}{extension}")
+                    images_error()
+                    is_error = True
+                    error_count += 1
+                    break
 
-                    # Calculate the coordinates for the square region
-                    square_margin_upper_left_x = (lower_right_x + upper_left_x) // 2 - square_margin_size // 2
-                    square_margin_upper_left_y = (lower_right_y + upper_left_y) // 2 - square_margin_size // 2
-                    square_margin_lower_right_x = square_margin_upper_left_x + square_margin_size
-                    square_margin_lower_right_y = square_margin_upper_left_y + square_margin_size
+            if endX - startX > 0 and endY - startY > 0:
+                # Calculate the size of the square region to be cropped
+                square_size = min(endX - startX, endY - startY)
 
-                    # Cropped image
-                    square_region = image[square_margin_upper_left_y:square_margin_lower_right_y, square_margin_upper_left_x:square_margin_lower_right_x]
+                # Calculate the coordinates for the square region
+                square_upper_left_x = (endX + startX) // 2 - square_size // 2
+                square_upper_left_y = (endY + startY) // 2 - square_size // 2
+                square_lower_right_x = square_upper_left_x + square_size
+                square_lower_right_y = square_upper_left_y + square_size
 
-                    # Check if the square region is valid (not empty)
-                    if square_region.size == 0:
-                        continue
-                    
-                    # Resize output image
+                # SECOND BOX MARGIN
+                width_square = square_lower_right_x - square_upper_left_x
+                height_square = square_lower_right_y - square_upper_left_y
+
+                # Calculate the margin based on the height of the bounding box
+                top_margin_percent = int(height_square * top_margin_value) 
+                bottom_margin_percent = int(height_square * bottom_margin_value)
+                left_margin_percent = bottom_margin_percent
+                right_margin_percent = bottom_margin_percent
+                
+                # Calculate the coordinates of the upper body region
+                upper_left_x = max(square_upper_left_x - left_margin_percent, 0)
+                upper_left_y = max(square_upper_left_y - top_margin_percent, 0)
+                lower_right_x = min(square_lower_right_x + right_margin_percent, image.shape[1])
+                lower_right_y = min(square_lower_right_y + bottom_margin_percent, image.shape[0])
+                
+                square_margin_size = min(lower_right_x - upper_left_x, lower_right_y - upper_left_y)
+
+                # Calculate the coordinates for the square region
+                square_margin_upper_left_x = (lower_right_x + upper_left_x) // 2 - square_margin_size // 2
+                square_margin_upper_left_y = (lower_right_y + upper_left_y) // 2 - square_margin_size // 2
+                square_margin_lower_right_x = square_margin_upper_left_x + square_margin_size
+                square_margin_lower_right_y = square_margin_upper_left_y + square_margin_size
+
+                # Cropped image
+                square_region = image[square_margin_upper_left_y:square_margin_lower_right_y, square_margin_upper_left_x:square_margin_lower_right_x]
+
+                # Check if the square region is valid (not empty)
+                if square_region.size != 0:
+                # Resize output image
                     resized_image = cv2.resize(square_region, (output_res, output_res))
 
-                    # Calculate the thickness of the rectangle based on the image resolution
-                    resolution_thickness_ratio = image.shape[1] // 128
-                    thickness = max(resolution_thickness_ratio, 5)
+                # Save the cropped and resized image
+                output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
+                if is_error == False:
+                    cv2.imwrite(output_image_path, resized_image)
 
-                    if endX - startX > 0 and endY - startY > 0:
-                        # Draw rectangle on debug image
-                        debug_image = image.copy()
-                        
-                        cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) #face rectangle
-                        cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) #crop rectagle
-                        cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y), (square_margin_lower_right_x, square_margin_lower_right_y), (255, 165, 0), thickness)
+                # Calculate the thickness of the rectangle based on the image resolution
+                resolution_thickness_ratio = image.shape[1] // 128
+                thickness = max(resolution_thickness_ratio, 5)
 
-                        # Add text label with original image resolution and confidence level
-                        resolution_text = f"{image.shape[1]}x{image.shape[0]} face_{i}_{width_square}px ({int(confidence * 100)}%)"
+                # Draw rectangle on debug image
+                debug_image = image.copy()
+                
+                cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) #face rectangle
+                cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) #crop rectagle
+                cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y), (square_margin_lower_right_x, square_margin_lower_right_y), (255, 165, 0), thickness)
 
-                        # Set the background color and text color
-                        background_color = (255, 255, 0)  # Cyan color for the background
-                        text_color = (0, 0, 0)  # Black color for the text
+                # Add text label with original image resolution and confidence level
+                resolution_text = f"{image.shape[1]}x{image.shape[0]} face_{i}_{width_square}px ({int(confidence * 100)}%)"
 
-                        # Calculate the font scale based on the image resolution
-                        font_scale = min(image.shape[1], image.shape[0]) / 1000
+                # Set the background color and text color
+                background_color = (255, 255, 0)  # Cyan color for the background
+                text_color = (0, 0, 0)  # Black color for the text
 
-                        # Calculate the font thickness based on the image resolution
-                        font_thickness = max(1, int(min(image.shape[1], image.shape[0]) / 500))
+                # Calculate the font scale based on the image resolution
+                font_scale = min(image.shape[1], image.shape[0]) / 1000
 
-                        # Calculate the size of the text label
-                        text_size, _ = cv2.getTextSize(resolution_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+                # Calculate the font thickness based on the image resolution
+                font_thickness = max(1, int(min(image.shape[1], image.shape[0]) / 500))
 
-                        # Calculate the desired width and height for the background
-                        background_width = text_size[0] + 10
-                        background_height = text_size[1] + 10
+                # Calculate the size of the text label
+                text_size, _ = cv2.getTextSize(resolution_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
 
-                        # Create a rectangular background for the text
-                        background = np.zeros((background_height, background_width, 3), dtype=np.uint8)
-                        background[:, :] = background_color
+                # Calculate the desired width and height for the background
+                background_width = text_size[0] + 10
+                background_height = text_size[1] + 10
 
-                        # Resize the background if its width is greater than the available width in debug_image
-                        if background_width > debug_image.shape[1]:
-                            ratio = debug_image.shape[1] / background_width
-                            background_width = debug_image.shape[1]
-                            background_height = int(background_height * ratio)
-                            background = cv2.resize(background, (background_width, background_height))
+                # Create a rectangular background for the text
+                background = np.zeros((background_height, background_width, 3), dtype=np.uint8)
+                background[:, :] = background_color
 
-                        # Add the text label on top of the background
-                        text_position = (10, 30 + text_size[1])
-                        cv2.putText(background, resolution_text, (10, text_size[1] + 5), cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, font_thickness)
+                # Resize the background if its width is greater than the available width in debug_image
+                if background_width > debug_image.shape[1]:
+                    ratio = debug_image.shape[1] / background_width
+                    background_width = debug_image.shape[1]
+                    background_height = int(background_height * ratio)
+                    background = cv2.resize(background, (background_width, background_height))
 
-                        # Overlay the background with the text on the debug image
-                        debug_image[0:background_height, 0:background_width] = background
+                # Add the text label on top of the background
+                text_position = (10, 30 + text_size[1])
+                cv2.putText(background, resolution_text, (10, text_size[1] + 5), cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, font_thickness)
 
-                        max_size = preview_debug_max_res
-                        # Calculate the new width and height while preserving the aspect ratio
-                        width = image.shape[1]
-                        height = image.shape[0]
+                # Overlay the background with the text on the debug image
+                debug_image[0:background_height, 0:background_width] = background
 
-                        if width > height:
-                            new_width = min(width, max_size)
-                            new_height = int(height * new_width / width)
-                        else:
-                            new_height = min(height, max_size)
-                            new_width = int(width * new_height / height)
+                # max_size = preview_debug_max_res
+                # # Calculate the new width and height while preserving the aspect ratio
+                # width = image.shape[1]
+                # height = image.shape[0]
 
-                        # Resize the image
-                        # debug_image = cv2.resize(debug_image, (new_width, new_height))
+                # if width > height:
+                #     new_width = min(width, max_size)
+                #     new_height = int(height * new_width / width)
+                # else:
+                #     new_height = min(height, max_size)
+                #     new_width = int(width * new_height / height)
 
-                        # Save the debug image with rectangle and label
-                        filename = os.path.splitext(os.path.basename(image_path))[0]
-                        debug_image_path = os.path.join(debug_output, f"{filename}_face_{i}.jpg")
-                        cv2.imwrite(debug_image_path, debug_image)
+                # Resize the image
+                # debug_image = cv2.resize(debug_image, (new_width, new_height))
 
-                        # Save the cropped and resized image
-                        output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
-                        if is_error == False:
-                            cv2.imwrite(output_image_path, resized_image)
-                            processed_images += 1
+                # Save the debug image with rectangle and label
+                filename = os.path.splitext(os.path.basename(image_path))[0]
+                debug_image_path = os.path.join(debug_output, f"{filename}_face_{i}.jpg")
+                cv2.imwrite(debug_image_path, debug_image)
 
-                        if show_preview == True:
-                            # Define the desired maximum and minimum width and height of the preview window
-                            debug_max_window_width = preview_debug_max_res
-                            debug_max_window_height = preview_debug_max_res
-                            debug_min_window_width = preview_debug_min_res
-                            debug_min_window_height = preview_debug_min_res
-        
-                            output_preview_res = preview_output_res
-        
-                            # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
-                            window_width = debug_image.shape[1]
-                            window_height = debug_image.shape[0]
-                            window_aspect_ratio = window_width / float(window_height)
-        
-                            # Debug preview images
-                            if window_width > debug_max_window_width or window_height > debug_max_window_height:
-                                # Check if the width or height exceeds the maximum limits
-                                width_scale_factor = debug_max_window_width / window_width
-                                height_scale_factor = debug_max_window_height / window_height
-                                scale_factor = min(width_scale_factor, height_scale_factor)
-                            else:
-                                # Check if the width or height is below the minimum limits
-                                width_scale_factor = debug_min_window_width / window_width
-                                height_scale_factor = debug_min_window_height / window_height
-                                scale_factor = max(width_scale_factor, height_scale_factor)
-        
-                            new_width = int(window_width * scale_factor)
-                            new_height = int(window_height * scale_factor)
-        
-                            debug_preview_image = cv2.resize(debug_image, (new_width, new_height))
-                            output_preview_image = cv2.resize(resized_image, (output_preview_res, output_preview_res))
-        
-                            # Show a preview window of the debug image and set it to stay on top
-                            cv2.namedWindow("Debug Image", cv2.WINDOW_AUTOSIZE)
-                            cv2.imshow("Debug Image", debug_preview_image)
-                            cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
-                            cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
-        
-                            # Show a preview window of the output image and set it to stay on top
-                            cv2.namedWindow("Output Image", cv2.WINDOW_AUTOSIZE)
-                            cv2.imshow("Output Image", output_preview_image)
-                            cv2.setWindowProperty("Output Image", cv2.WND_PROP_TOPMOST, 1)
-                            cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
-                            
-                            cv2.waitKey(250)  # Wait time     
-        else:
-            print(f"\rThe resolution is too low for face detection, skipping {filename}{extension}")
-            images_error()
-            error_count += 1
+
+                if show_preview == True:
+                    # Define the desired maximum and minimum width and height of the preview window
+                    debug_max_window_width = preview_debug_max_res
+                    debug_max_window_height = preview_debug_max_res
+                    debug_min_window_width = preview_debug_min_res
+                    debug_min_window_height = preview_debug_min_res
+
+                    output_preview_res = preview_output_res
+
+                    # Resize the debug image to fit within the maximum window dimensions while maintaining the aspect ratio
+                    window_width = debug_image.shape[1]
+                    window_height = debug_image.shape[0]
+                    window_aspect_ratio = window_width / float(window_height)
+
+                    # Debug preview images
+                    if window_width > debug_max_window_width or window_height > debug_max_window_height:
+                        # Check if the width or height exceeds the maximum limits
+                        width_scale_factor = debug_max_window_width / window_width
+                        height_scale_factor = debug_max_window_height / window_height
+                        scale_factor = min(width_scale_factor, height_scale_factor)
+                    else:
+                        # Check if the width or height is below the minimum limits
+                        width_scale_factor = debug_min_window_width / window_width
+                        height_scale_factor = debug_min_window_height / window_height
+                        scale_factor = max(width_scale_factor, height_scale_factor)
+
+                    new_width = int(window_width * scale_factor)
+                    new_height = int(window_height * scale_factor)
+
+                    debug_preview_image = cv2.resize(debug_image, (new_width, new_height))
+                    output_preview_image = cv2.resize(resized_image, (output_preview_res, output_preview_res))
+
+                    # Show a preview window of the debug image and set it to stay on top
+                    cv2.namedWindow("Debug Image", cv2.WINDOW_AUTOSIZE)
+                    cv2.imshow("Debug Image", debug_preview_image)
+                    cv2.setWindowProperty("Debug Image", cv2.WND_PROP_TOPMOST, 1)
+                    cv2.setWindowProperty("Debug Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
+
+                    # Show a preview window of the output image and set it to stay on top
+                    cv2.namedWindow("Output Image", cv2.WINDOW_AUTOSIZE)
+                    cv2.imshow("Output Image", output_preview_image)
+                    cv2.setWindowProperty("Output Image", cv2.WND_PROP_TOPMOST, 1)
+                    cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
+                    
+                    cv2.waitKey(0)  # Wait time   
 
     progress_bar.update(1)
 
