@@ -26,7 +26,8 @@ os.makedirs("output/error_images", exist_ok=True)
 # Output cropped resolution (pixel)
 output_res = 1080
 preview_output_res = 256
-preview_debug_res = 768
+preview_debug_max_res = 768
+preview_debug_min_res = 512
 
 # Minimun face bounding box size (pixel)
 min_face_res = 96
@@ -155,6 +156,7 @@ progress_bar = tqdm(total=len(image_paths), desc="Processing images")
 
 # Process each image
 for image_path in image_paths:
+    is_error = False
     filename, extension = os.path.splitext(os.path.basename(image_path))
 
     # Load the image
@@ -204,6 +206,7 @@ for image_path in image_paths:
                 if confidence < confidence_level:
                     print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping {filename}{extension}")
                     images_error()
+                    is_error = True
                     error_count += 1
                     break
 
@@ -222,18 +225,21 @@ for image_path in image_paths:
                         if width < min_fullbody_res or height < min_fullbody_res:
                             print(f"\rFace resolution is too small for fullbody crop, skipping {filename}{extension}")
                             images_error()
+                            is_error = True
                             error_count += 1
                             break
                     elif boundingbox_class == 2:
                         if width < min_face_res or height < min_face_res:
                             print(f"\rFace resolution is too small for face crop, skipping {filename}{extension}")
                             images_error()
+                            is_error = True
                             error_count += 1
                             break
                     elif boundingbox_class == 1:
                         if width < min_upperbody_res or height < min_upperbody_res:
                             print(f"\rFace resolution is too small for upperbody crop, skipping {filename}{extension}")
                             images_error()
+                            is_error = True
                             error_count += 1
                             break
                 break
@@ -343,7 +349,7 @@ for image_path in image_paths:
                         # Overlay the background with the text on the debug image
                         debug_image[0:background_height, 0:background_width] = background
 
-                        max_size = preview_debug_res
+                        max_size = preview_debug_max_res
                         # Calculate the new width and height while preserving the aspect ratio
                         width = image.shape[1]
                         height = image.shape[0]
@@ -365,15 +371,16 @@ for image_path in image_paths:
 
                         # Save the cropped and resized image
                         output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png")
-                        if cv2.imwrite(output_image_path, resized_image):
+                        if is_error == False:
+                            cv2.imwrite(output_image_path, resized_image)
                             processed_images += 1
 
                         if show_preview == True:
                             # Define the desired maximum and minimum width and height of the preview window
-                            debug_max_window_width = 768
-                            debug_max_window_height = 768
-                            debug_min_window_width = 400
-                            debug_min_window_height = 400
+                            debug_max_window_width = preview_debug_max_res
+                            debug_max_window_height = preview_debug_max_res
+                            debug_min_window_width = preview_debug_min_res
+                            debug_min_window_height = preview_debug_min_res
         
                             output_preview_res = preview_output_res
         
