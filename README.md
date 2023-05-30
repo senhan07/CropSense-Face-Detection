@@ -1,4 +1,6 @@
 # CropSense - Face Detection
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F2K9CHH)
+<a href="https://www.buymeacoffee.com/_ramen_"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=_ramen_&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" height="30px"/></a>
 
 CropSense is a script to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping into 1:1 ratio based on the detected regions
 
@@ -52,7 +54,6 @@ Currently, the code uses CPU instead of GPU for processing.<br>
 
 1. Place your input images in the `input` folder (just create a folder if doesn't exist).
 2. Run the script: `python main.py`
-
 3. Follow the prompts to select the crop type (1 for upper body, 2 for face, 3 for full body) and choose whether to show a preview window.
 4. If the output folders are not empty, you will be prompted to clean the output folder. Choose accordingly.
 5. The script will process each image, perform face detection, and crop the images based on the selected crop type and confidence level.
