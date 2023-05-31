@@ -1,4 +1,4 @@
-confidence_level = 0.5
+confidence_level = 0.7
 
 # Output cropped resolution (pixel)
 output_res = 1080
