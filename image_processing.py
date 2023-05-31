@@ -5,7 +5,6 @@ import win32com.client
 from tqdm import tqdm
 import numpy as np
 import variable
-from user_input import select_option
 
 def images_error(image_path, error_folder):
     shell = win32com.client.Dispatch("WScript.Shell")
