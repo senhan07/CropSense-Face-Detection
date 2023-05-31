@@ -2,9 +2,9 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F2K9CHH)
 <a href="https://www.buymeacoffee.com/_ramen_"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=_ramen_&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" height="30px"/></a>
 
-CropSense is a script to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping into 1:1 ratio based on the detected regions
+CropSense is a tool to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping into 1:1 ratio based on the detected regions
 
-It proves to be particularly useful in scenarios where you need make a dataset for training a model, it's not perfect yet :)
+It  useful in scenarios where you need make a dataset for training a model, it's not perfect yet :)
 
 - [Demo](#demo)
 - [Processing Speed](#processing-speed)
@@ -18,7 +18,7 @@ It proves to be particularly useful in scenarios where you need make a dataset f
 
 ## Processing Speed
 Currently, the code uses CPU instead of GPU for processing.<br>
-<u>+</u> 2400 images (1440px) take about 10 minutes to process on the Intel i3-12100F.
+<u>+</u> 2400 images (1440px) take about 10 minutes to process on the Intel i3-12100F. (*with preview window disabled*)
 
 ## Features:
 - 🖼️ **Flexible Crop Options**: Choose from three crop options: upper body, face, or full body. Select the perfect region you want to highlight and let the script do the magic!
@@ -63,15 +63,15 @@ Currently, the code uses CPU instead of GPU for processing.<br>
 
 ## Configuration
 
-You can customize the following settings in the script:
+You can customize the following settings in the `variable.py`:
 
 - `output_res`: Output cropped resolution (pixel).
-- `preview_output_res`: Preview window output resolution (pixel).
-- `preview_debug_res`: Preview window debug image resolution (pixel).
+- `preview_output_res`: Preview window output size (pixel).
+- `preview_debug_max_res`: Maximum preview window debug image size (pixel).
 - `min_face_res`: Minimum detected face size for face crop type (pixel).
 - `min_upperbody_res`: Minimum detected face size for upperbody crop type (pixel).
 - `min_fullbody_res`: Minimum detected face size for fullbody crop type (pixel).
-- `confidence_level`: Confidence level for face detection (between 0 and 1).
+- `confidence_level`: Confidence level for face detection (between 0 and 1). *(default: 0.5)*
 - `input_folder`: Input images folder.
 - `output_upperbody_folder`: Output folder for upper body cropped images.
 - `debug_upperbody_folder`: Debug folder for upper body images with bounding boxes.
@@ -80,7 +80,6 @@ You can customize the following settings in the script:
 - `output_fullbody_folder`: Output folder for full body cropped images.
 - `debug_fullbody_folder`: Debug folder for full body images with bounding boxes.
 - `error_folder`: Folder for error images.
-- `cv2.waitKey(250)` Delay time for displaying preview image in (milliseconds)
 
 ## Contributing
 Contributions to the project are welcome. If you find any issues or would like to suggest improvements, please create a new issue or submit a pull request.
