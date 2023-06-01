@@ -28,6 +28,7 @@ def process_image(input_folder,
                   top_margin_value, 
                   bottom_margin_value):
     error_count = 0
+    processed_images = 0
     endX = 0
     endY = 0
     startX = 0
@@ -42,7 +43,7 @@ def process_image(input_folder,
 
     net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
     image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
-    progress_bar = tqdm(total=len(image_paths), desc="Processing images")
+    progress_bar = tqdm(total=len(image_paths), desc="Processing images", dynamic_ncols=True)
     for image_path in image_paths:
         is_error = False
         filename, extension = os.path.splitext(os.path.basename(image_path))
@@ -59,6 +60,7 @@ def process_image(input_folder,
                 detections = net.forward()
 
                 for i in range(detections.shape[2]):
+                    processed_images += 1
                     confidence = detections[0, 0, i, 2]
                     box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
                     (startX, startY, endX, endY) = box.astype(int)
@@ -223,7 +225,6 @@ def process_image(input_folder,
 
     total_images = len(image_paths)
     total_output_images = len(os.listdir(output_folder))
-    processed_images = total_images - error_count
     print(f"Total images: {total_images}")
     print(f"Processed images: {processed_images}")
     print(f"Total faces detected: {total_output_images}")
@@ -254,39 +255,72 @@ def draw_rectangle(endX,
     square_size = min(endX - startX, endY - startY)
 
     # Calculate the coordinates for the square region
-    square_upper_left_x = (endX + startX) // 2 - square_size // 2
-    square_upper_left_y = (endY + startY) // 2 - square_size // 2
+    square_center_x = (endX + startX) // 2
+    square_center_y = (endY + startY) // 2
+    square_upper_left_x = square_center_x - square_size // 2
+    square_upper_left_y = square_center_y - square_size // 2
     square_lower_right_x = square_upper_left_x + square_size
     square_lower_right_y = square_upper_left_y + square_size
 
-    # SECOND BOX MARGIN
     width_square = square_lower_right_x - square_upper_left_x
     height_square = square_lower_right_y - square_upper_left_y
-
+    
     # Calculate the margin based on the height of the bounding box
-    top_margin_percent = int(height_square * top_margin_value) 
-    bottom_margin_percent = int(height_square * bottom_margin_value)
-    left_margin_percent = bottom_margin_percent
-    right_margin_percent = bottom_margin_percent
+    top_margin_percent = int(square_size * top_margin_value) 
+    bottom_margin_percent = int(square_size * bottom_margin_value)
+    left_margin_percent = int(square_size * bottom_margin_value)
+    right_margin_percent = int(square_size * bottom_margin_value)
 
     # Calculate the coordinates of the upper body region
     upper_left_x = max(square_upper_left_x - left_margin_percent, 0)
-    upper_left_y = max(square_upper_left_y - top_margin_percent, 0)
+    upper_left_y = max(square_upper_left_y - top_margin_percent, 0)  # Align to the top of the face
+
+    # Calculate the lower right coordinates based on the maximum image dimensions
     lower_right_x = min(square_lower_right_x + right_margin_percent, image.shape[1])
     lower_right_y = min(square_lower_right_y + bottom_margin_percent, image.shape[0])
-    # lower_right_x = max(square_lower_right_x + right_margin_percent, upper_left_x)
-    # lower_right_y = max(square_lower_right_y + bottom_margin_percent, upper_left_y)
 
+    # Adjust the upper_left_x and lower_right_x based on the width of the cropped region
+    width_square_margin = lower_right_x - upper_left_x
+    if width_square_margin > image.shape[1]:
+        shift_amount = width_square_margin - image.shape[1]
+        upper_left_x = max(upper_left_x - shift_amount, 0)
+        lower_right_x = image.shape[1]
+
+    # Adjust the upper_left_y based on the height of the cropped region
+    height_square_margin = lower_right_y - upper_left_y
+    if height_square_margin > image.shape[0]:
+        shift_amount = height_square_margin - image.shape[0]
+        upper_left_y = max(upper_left_y - shift_amount, 0)
+        lower_right_y = image.shape[0]
+
+    # Calculate the new square size based on the adjusted coordinates
     square_margin_size = min(lower_right_x - upper_left_x, lower_right_y - upper_left_y)
 
     # Calculate the coordinates for the square region
-    square_margin_upper_left_x = (lower_right_x + upper_left_x) // 2 - square_margin_size // 2
-    square_margin_upper_left_y = (lower_right_y + upper_left_y) // 2 - square_margin_size // 2
+    square_margin_center_x = (lower_right_x + upper_left_x) // 2
+    square_margin_upper_left_x = square_margin_center_x - square_margin_size // 2
+    square_margin_upper_left_y = upper_left_y  # Align to the top of the face
     square_margin_lower_right_x = square_margin_upper_left_x + square_margin_size
     square_margin_lower_right_y = square_margin_upper_left_y + square_margin_size
 
-    # Cropped image
-    square_region = image[square_margin_upper_left_y:square_margin_lower_right_y, square_margin_upper_left_x:square_margin_lower_right_x]
+    # Calculate the center point of the second box
+    second_box_center_x = (startX + endX) // 2
+
+    # Calculate the shift amount for aligning the square_region horizontally
+    shift_amount = second_box_center_x - ((square_margin_upper_left_x + square_margin_lower_right_x) // 2)
+
+    # Adjust the square_margin_upper_left_x and square_margin_lower_right_x based on the shift amount
+    square_margin_upper_left_x += shift_amount
+    square_margin_lower_right_x += shift_amount
+
+    # Crop the image to the square region with margin
+    square_margin_upper_left_x = max(square_margin_upper_left_x, 0)
+    square_margin_lower_right_x = min(square_margin_lower_right_x, image.shape[1])
+
+    # Adjust square_margin_size based on the final coordinates
+    square_margin_size = square_margin_lower_right_x - square_margin_upper_left_x
+
+    square_region = image[square_margin_upper_left_y:square_margin_upper_left_y + square_margin_size, square_margin_upper_left_x:square_margin_upper_left_x + square_margin_size]
 
     # Save the cropped and resized image
     output_image_path = os.path.join(output_folder, f"{filename}_face_{i}.png") # type: ignore
@@ -308,8 +342,9 @@ def draw_rectangle(endX,
 
     cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) #face rectangle
     cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) #crop rectagle
-    cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y), (square_margin_lower_right_x, square_margin_lower_right_y), (255, 165, 0), thickness)
-
+    cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y),
+              (square_margin_upper_left_x + square_margin_size, square_margin_upper_left_y + square_margin_size),
+              (255,165,0), thickness)    
     font_scale = min(image.shape[1], image.shape[0]) / 1000
     font_thickness = max(1, int(min(image.shape[1], image.shape[0]) / 500))
 

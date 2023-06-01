@@ -1,10 +1,7 @@
 import os
-import numpy as np
-from tqdm import tqdm
 from image_processing import process_image
 from user_input import select_option, preview_window, clean_output
 import variable
-
 
 input_folder = variable.input_folder
 output_res = variable.output_res

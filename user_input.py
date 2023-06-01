@@ -12,7 +12,7 @@ def select_option():
     debug_fullbody_folder = variable.debug_fullbody_folder
 
     while True:
-        option = input("Select a crop type:\n1. Upper Body\n2. Face\n3. Full Body\nSelect: ")
+        option = input("Select a crop type:\n1. Upper Body\n2. Face\n3. Full body (try to crop as much as possible)\nSelect: ")
         if option not in ["1", "2", "3"]:
             print("Invalid option selected. Please try again.")
             print("")
@@ -31,8 +31,8 @@ def select_option():
         output_folder = output_face_folder
         croptype = 2
     elif option == "3":
-        top_margin_value = 3
-        bottom_margin_value = 5
+        top_margin_value = 1
+        bottom_margin_value = 12
         debug_output = debug_fullbody_folder
         output_folder = output_fullbody_folder
         croptype = 3
