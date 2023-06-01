@@ -2,3 +2,4 @@ input*/*
 output*/*
 .vscode
 .venv
+__pycache__/*
