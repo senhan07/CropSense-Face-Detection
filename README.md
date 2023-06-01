@@ -52,7 +52,7 @@ Currently, the code uses CPU instead of GPU for processing.<br>
 
 ## Usage
 
-1. Place your input images in the `input` folder (just create a folder if doesn't exist).
+1. Place your input images in the `input` folder (just create a folder called `input`).
 2. Run the script: `python main.py`
 3. Follow the prompts to select the crop type (1 for upper body, 2 for face, 3 for full body) and choose whether to show a preview window.
 4. If the output folders are not empty, you will be prompted to clean the output folder. Choose accordingly.
