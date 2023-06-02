@@ -30,4 +30,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Test with Python
-        run: echo "1" | python main.py
+        run: |
+          $input = "1", "n" | Out-String -Stream
+          python main.py <<< $input
