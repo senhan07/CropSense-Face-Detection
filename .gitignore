@@ -1,5 +1,5 @@
-input*/*
-output*/*
 .vscode
 .venv
 __pycache__/*
+input-*
+!input/example*.jpg
