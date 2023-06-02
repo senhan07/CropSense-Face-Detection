@@ -1,0 +1,37 @@
+name: Python Testing
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install flake8 pylint
+          pip install -r requirements.txt
+
+      - name: Lint with Flake8
+        run: flake8 --exclude=venv
+
+      - name: Lint with Pylint
+        run: pylint --exclude=venv . --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,trailing-newlines,trailing-whitespace,missing-final-newline
