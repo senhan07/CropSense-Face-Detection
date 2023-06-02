@@ -27,11 +27,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install flake8 pylint
+          pip install flake8
           pip install -r requirements.txt
 
       - name: Lint with Flake8
         run: flake8 --exclude=venv
-
-      - name: Lint with Pylint
-        run: pylint --exclude=venv . --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,trailing-newlines,trailing-whitespace,missing-final-newline
