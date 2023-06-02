@@ -27,8 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install flake8
           pip install -r requirements.txt
 
-      - name: Lint with Flake8
-        run: flake8 --exclude=venv
+      - name: Test with Python
+        run: echo -e "y" | python main.py
