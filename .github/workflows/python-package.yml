@@ -27,8 +27,11 @@ jobs:
           pip install -r requirements.txt
           pip install flake8 pylint
 
+      - name: Configure Pylint
+        run: echo "[MASTER]\nignore=__init__.py" > .pylintrc
+
       - name: Run Flake8
-        run: flake8 . --exclude=__init__.py
+        run: flake8 .
 
       - name: Run Pylint
-        run: pylint . --ignore=__init__.py
+        run: pylint .
