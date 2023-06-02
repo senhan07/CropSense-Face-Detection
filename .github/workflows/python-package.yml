@@ -28,7 +28,7 @@ jobs:
           pip install flake8 pylint
 
       - name: Run Flake8
-        run: flake8 --exclude=venv .
+        run: flake8 .
 
       - name: Run Pylint
-        run: pylint --ignore=venv .
+        run: pylint .
