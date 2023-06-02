@@ -61,17 +61,12 @@ def clean_output(output_folder, debug_output, error_folder):
     while len(os.listdir(output_folder)) > 0:
         file_exist = input("Output folders are not empty,  clean it? [Y]es/[N]o: ")
         if file_exist.lower() == "y":
-            # Add a delay of 5 seconds before proceeding with the deletion
-            print("Deleting files in 5... [PRESS CTRL+C TO CANCEL]")
-            time.sleep(1)
-            print("Deleting files in 4... [PRESS CTRL+C TO CANCEL]")
-            time.sleep(1)
-            print("Deleting files in 3... [PRESS CTRL+C TO CANCEL]")
-            time.sleep(1)
-            print("Deleting files in 2... [PRESS CTRL+C TO CANCEL]")
-            time.sleep(1)
-            print("Deleting files in 1... [PRESS CTRL+C TO CANCEL]")
-            time.sleep(1)
+            i = 5
+            while i <= 5 and i > 0:
+                # Add a delay of 5 seconds before proceeding with the deletion
+                print(f"\rDeleting files in {i}... [PRESS CTRL+C TO CANCEL]")
+                time.sleep(1)
+                i -= 1
 
             # Get the total number of files
             total_files = sum([len(files) for _, _, files in os.walk(output_folder)])
