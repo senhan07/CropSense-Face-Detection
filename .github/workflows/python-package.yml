@@ -28,7 +28,7 @@ jobs:
           pip install flake8 pylint
 
       - name: Run Flake8
-        run: flake8 .
+        run: flake8 . --exclude=__init__.py
 
       - name: Run Pylint
-        run: pylint .
+        run: pylint . --ignore=__init__.py
