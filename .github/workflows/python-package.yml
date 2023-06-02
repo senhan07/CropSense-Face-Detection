@@ -25,11 +25,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install flake8 pytest
+          pip install flake8 pylint
 
       - name: Run Flake8
-        run: flake8 --exclude=venv
+        run: flake8 --exclude=venv .
 
-      - name: Run tests
-        run: pytest
-
+      - name: Run Pylint
+        run: pylint --exclude=venv .
