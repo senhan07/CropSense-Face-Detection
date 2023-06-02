@@ -31,5 +31,5 @@ jobs:
 
       - name: Test with Python
         run: |
-          $input = "1", "n" | Out-String -Stream
+          $input = "1", "n" -join "`n"
           python main.py <<< $input
