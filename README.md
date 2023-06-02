@@ -2,6 +2,10 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F2K9CHH)
 <a href="https://www.buymeacoffee.com/_ramen_"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=_ramen_&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" height="30px"/></a>
 
+![GitHub repo size](https://img.shields.io/github/repo-size/senhan07/CropSense-Face-Detection?label=SIZE&style=flat-square)
+![GitHub issues](https://img.shields.io/github/issues/senhan07/CropSense-Face-Detection?color=red&label=Issues&style=flat-square)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/senhan07/CropSense-Face-Detection?label=Pull%20Requests&style=flat-square)
+<br>
 CropSense is a tool to crop an images based on various bounding box sizes, such as upper body, face, or full body. It utilizes a powerful pre-trained s3fd face detection model to accurately identify faces within the images and performs precise cropping into 1:1 ratio based on the detected regions
 
 It  useful in scenarios where you need make a dataset for training a model, it's not perfect yet :)
@@ -52,7 +56,7 @@ Currently, the code uses CPU instead of GPU for processing.<br>
 
 ## Usage
 
-1. Place your input images in the `input` folder (just create a folder called `input`).
+1. Place your images in the `input` folder
 2. Run the script: `python main.py`
 3. Follow the prompts to select the crop type (1 for upper body, 2 for face, 3 for full body) and choose whether to show a preview window.
 4. If the output folders are not empty, you will be prompted to clean the output folder. Choose accordingly.
