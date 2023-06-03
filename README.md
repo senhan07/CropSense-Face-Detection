@@ -37,7 +37,7 @@ Currently, the code uses CPU instead of GPU for processing.<br>
 
 ## Prerequisites
 
-- Python 3.x (Tested on Python 3.10)
+- Python 3.8+ (Tested on Python 3.10)
 - OpenCV (cv2)
 - numpy
 - tqdm
