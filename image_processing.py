@@ -16,7 +16,7 @@ def images_error(image_path, error_folder):
 
 
 
-def process_image(input_folder,
+def process_image(image_path,
                   error_folder,
                   output_folder,
                   debug_output,
@@ -26,9 +26,8 @@ def process_image(input_folder,
                   show_preview,
                   croptype, 
                   top_margin_value, 
-                  bottom_margin_value):
+                  bottom_margin_value,):
     error_count = 0
-    processed_images = 0
     endX = 0
     endY = 0
     startX = 0
@@ -36,164 +35,69 @@ def process_image(input_folder,
     i = 0
     confidence = 0
     image = ""
-    image_path = ""
     output_image_path = ""
     filename = ""
     error_msg = ""
 
     net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
-    image_paths = [os.path.join(input_folder, file) for file in os.listdir(input_folder)]
-    progress_bar = tqdm(total=len(image_paths), desc="Processing images", dynamic_ncols=True)
-    for image_path in image_paths:
-        is_error = False
-        filename, extension = os.path.splitext(os.path.basename(image_path))
-        image = cv2.imread(image_path)
-        image_format = imghdr.what(image_path)
-        supported_formats = ["jpg", "jpeg", "png", "webp"]
-        if image_format is None or image_format not in supported_formats:
-            print(f"\rInvalid image format or unsupported format, skipping {filename}{extension}")
-            error_count += 1
-        else:
-            if image.shape[0] > 300 or image.shape[1] > 300:
-                blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-                net.setInput(blob)
-                detections = net.forward()
+    is_error = False
+    filename, extension = os.path.splitext(os.path.basename(image_path))
+    image = cv2.imread(image_path)
+    image_format = imghdr.what(image_path)
+    supported_formats = ["jpg", "jpeg", "png", "webp"]
+    if image_format is None or image_format not in supported_formats:
+        print(f"\rInvalid image format or unsupported format, skipping {filename}{extension}")
+        error_count += 1
+    else:
+        if image.shape[0] > 300 or image.shape[1] > 300:
+            blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+            net.setInput(blob)
+            detections = net.forward()
 
-                for i in range(detections.shape[2]):
-                    processed_images += 1
-                    confidence = detections[0, 0, i, 2]
-                    box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
-                    (startX, startY, endX, endY) = box.astype(int)
+            for i in range(detections.shape[2]):
+                confidence = detections[0, 0, i, 2]
+                box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
+                (startX, startY, endX, endY) = box.astype(int)
 
-                    width = endX - startX
-                    height = endY - startY
-                    if confidence < variable.confidence_level:
-                        print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping face_{i} on {filename}{extension}")
-                        error_msg = "CONFIDENCE LEVEL TOO LOW"
-                        images_error(image_path, error_folder)
-                        is_error = True
-                        error_count += 1
-                        draw_rectangle(endX,
-                                        startX,
-                                        endY,
-                                        startY,
-                                        top_margin_value,
-                                        bottom_margin_value,
-                                        image, 
-                                        output_res,
-                                        output_folder,
-                                        output_image_path,
-                                        filename,
-                                        image_path,
-                                        debug_output,
-                                        show_preview,
-                                        preview_output_res,
-                                        preview_debug_max_res,
-                                        is_error,
-                                        i,
-                                        confidence,
-                                        error_msg)
-                        break
-                    
-                    if confidence > variable.confidence_level:
-                        if croptype == 3:
-                            if width < variable.min_fullbody_res or height < variable.min_fullbody_res:
-                                print(f"\rFace resolution is too small for fullbody crop, skipping face_{i} on {filename}{extension}")
-                                error_msg = "FACE RESOLUTION IS TOO SMALL"
-                                images_error(image_path, error_folder)
-                                is_error = True
-                                error_count += 1
-                                draw_rectangle(endX,
-                                                startX,
-                                                endY,
-                                                startY,
-                                                top_margin_value,
-                                                bottom_margin_value,
-                                                image, 
-                                                output_res,
-                                                output_folder,
-                                                output_image_path,
-                                                filename,
-                                                image_path,
-                                                debug_output,
-                                                show_preview,
-                                                preview_output_res,
-                                                preview_debug_max_res,
-                                                is_error,
-                                                i,
-                                                confidence,
-                                                error_msg)
-                                break
-                        elif croptype == 2:
-                            if width < variable.min_face_res or height < variable.min_face_res:
-                                print(f"\rFace resolution is too small for face crop, skipping face_{i} on {filename}{extension}")
-                                error_msg = "FACE RESOLUTION IS TOO SMALL"
-                                images_error(image_path, error_folder)
-                                is_error = True
-                                error_count += 1
-                                draw_rectangle(endX,
-                                                startX,
-                                                endY,
-                                                startY,
-                                                top_margin_value,
-                                                bottom_margin_value,
-                                                image, 
-                                                output_res,
-                                                output_folder,
-                                                output_image_path,
-                                                filename,
-                                                image_path,
-                                                debug_output,
-                                                show_preview,
-                                                preview_output_res,
-                                                preview_debug_max_res,
-                                                is_error,
-                                                i,
-                                                confidence,
-                                                error_msg)
-                                break
-                        elif croptype == 1:
-                            if width < variable.min_upperbody_res or height < variable.min_upperbody_res:
-                                print(f"\rFace resolution is too small for upperbody crop, skipping face_{i} on {filename}{extension}")
-                                error_msg = "FACE RESOLUTION IS TOO SMALL"
-                                images_error(image_path, error_folder)
-                                is_error = True
-                                error_count += 1
-                                draw_rectangle(endX,
-                                                startX,
-                                                endY,
-                                                startY,
-                                                top_margin_value,
-                                                bottom_margin_value,
-                                                image, 
-                                                output_res,
-                                                output_folder,
-                                                output_image_path,
-                                                filename,
-                                                image_path,
-                                                debug_output,
-                                                show_preview,
-                                                preview_output_res,
-                                                preview_debug_max_res,
-                                                is_error,
-                                                i,
-                                                confidence,
-                                                error_msg)
-                                break
+                width = endX - startX
+                height = endY - startY
+                if confidence < variable.confidence_level:
+                    print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping face_{i} on {filename}{extension}")
+                    error_msg = "CONFIDENCE LEVEL TOO LOW"
+                    images_error(image_path, error_folder)
+                    is_error = True
+                    error_count += 1
+                    draw_rectangle(endX,
+                                    startX,
+                                    endY,
+                                    startY,
+                                    top_margin_value,
+                                    bottom_margin_value,
+                                    image, 
+                                    output_res,
+                                    output_folder,
+                                    output_image_path,
+                                    filename,
+                                    image_path,
+                                    debug_output,
+                                    show_preview,
+                                    preview_output_res,
+                                    preview_debug_max_res,
+                                    is_error,
+                                    i,
+                                    confidence,
+                                    error_msg)
                     break
-                for i in range(detections.shape[2]):
-                    if is_error == True:
-                        break
-                    confidence = detections[0, 0, i, 2]
-
-                    # Filter out weak detections
-                    if confidence > variable.confidence_level:
-                        box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
-                        (startX, startY, endX, endY) = box.astype(int)
-                    
-                        width = endX - startX
-                        height = endY - startY
-                        is_error = draw_rectangle(endX,
+                
+                if confidence > variable.confidence_level:
+                    if croptype == 3:
+                        if width < variable.min_fullbody_res or height < variable.min_fullbody_res:
+                            print(f"\rFace resolution is too small for fullbody crop, skipping face_{i} on {filename}{extension}")
+                            error_msg = "FACE RESOLUTION IS TOO SMALL"
+                            images_error(image_path, error_folder)
+                            is_error = True
+                            error_count += 1
+                            draw_rectangle(endX,
                                             startX,
                                             endY,
                                             startY,
@@ -213,23 +117,103 @@ def process_image(input_folder,
                                             i,
                                             confidence,
                                             error_msg)
-                    else:
-                        break
-            else:
-                print(f"\rThe resolution is too low for face detection, skipping {filename}{extension}")
-                images_error(image_path, error_folder)
-                error_count += 1
-        progress_bar.update(1)
-    cv2.destroyAllWindows()  
-    progress_bar.close()
+                            break
+                    elif croptype == 2:
+                        if width < variable.min_face_res or height < variable.min_face_res:
+                            print(f"\rFace resolution is too small for face crop, skipping face_{i} on {filename}{extension}")
+                            error_msg = "FACE RESOLUTION IS TOO SMALL"
+                            images_error(image_path, error_folder)
+                            is_error = True
+                            error_count += 1
+                            draw_rectangle(endX,
+                                            startX,
+                                            endY,
+                                            startY,
+                                            top_margin_value,
+                                            bottom_margin_value,
+                                            image, 
+                                            output_res,
+                                            output_folder,
+                                            output_image_path,
+                                            filename,
+                                            image_path,
+                                            debug_output,
+                                            show_preview,
+                                            preview_output_res,
+                                            preview_debug_max_res,
+                                            is_error,
+                                            i,
+                                            confidence,
+                                            error_msg)
+                            break
+                    elif croptype == 1:
+                        if width < variable.min_upperbody_res or height < variable.min_upperbody_res:
+                            print(f"\rFace resolution is too small for upperbody crop, skipping face_{i} on {filename}{extension}")
+                            error_msg = "FACE RESOLUTION IS TOO SMALL"
+                            images_error(image_path, error_folder)
+                            is_error = True
+                            error_count += 1
+                            draw_rectangle(endX,
+                                            startX,
+                                            endY,
+                                            startY,
+                                            top_margin_value,
+                                            bottom_margin_value,
+                                            image, 
+                                            output_res,
+                                            output_folder,
+                                            output_image_path,
+                                            filename,
+                                            image_path,
+                                            debug_output,
+                                            show_preview,
+                                            preview_output_res,
+                                            preview_debug_max_res,
+                                            is_error,
+                                            i,
+                                            confidence,
+                                            error_msg)
+                            break
+                break
+            for i in range(detections.shape[2]):
+                if is_error == True:
+                    break
+                confidence = detections[0, 0, i, 2]
 
-    total_images = len(image_paths)
-    total_output_images = len(os.listdir(output_folder))
-    print(f"Total images: {total_images}")
-    print(f"Processed images: {processed_images}")
-    print(f"Total faces detected: {total_output_images}")
-    print(f"Error images: {error_count}")
-
+                # Filter out weak detections
+                if confidence > variable.confidence_level:
+                    box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
+                    (startX, startY, endX, endY) = box.astype(int)
+                
+                    width = endX - startX
+                    height = endY - startY
+                    is_error = draw_rectangle(endX,
+                                        startX,
+                                        endY,
+                                        startY,
+                                        top_margin_value,
+                                        bottom_margin_value,
+                                        image, 
+                                        output_res,
+                                        output_folder,
+                                        output_image_path,
+                                        filename,
+                                        image_path,
+                                        debug_output,
+                                        show_preview,
+                                        preview_output_res,
+                                        preview_debug_max_res,
+                                        is_error,
+                                        i,
+                                        confidence,
+                                        error_msg)
+                else:
+                    break
+        else:
+            print(f"\rThe resolution is too low for face detection, skipping {filename}{extension}")
+            images_error(image_path, error_folder)
+            error_count += 1
+    return error_count
 
 def draw_rectangle(endX,
                    startX,

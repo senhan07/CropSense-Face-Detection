@@ -44,18 +44,21 @@ def select_option():
 
 def preview_window():
     show_preview = False
+    multithread = False
     while True:
         show_preview = input("Show preview window? [Y]es/[N]o: ")
         if show_preview.lower() == "y":
             show_preview = True
+            parallel = False
             break
         elif show_preview.lower() == "n":
             show_preview = False
+            parallel = True
             break
         else:
             print("Invalid option selected. Please enter 'Y' or 'N'.")
             print("")
-    return show_preview
+    return show_preview, parallel
 
 def clean_output(output_folder, debug_output, error_folder):
     while len(os.listdir(output_folder)) > 0:
