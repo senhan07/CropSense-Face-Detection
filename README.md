@@ -22,7 +22,7 @@ It  useful in scenarios where you need make a dataset for training a model, it's
 
 ## Processing Speed
 Currently, the code uses CPU instead of GPU for processing.<br>
-<u>+</u> 2400 images (1440px) take about 10 minutes to process on the Intel i3-12100F. (*with preview window disabled*)
+<u>+</u> 2400 images (1440px) takes about 4 minutes to process on the Intel i3-12100F *(Running on multithread needs to disabled preview window)*
 
 ## Features:
 - 🖼️ **Flexible Crop Options**: Choose from three crop options: upper body, face, or full body. Select the perfect region you want to highlight and let the script do the magic!
