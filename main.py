@@ -31,6 +31,8 @@ if __name__ == '__main__':
     
     #Process face detection
     for image_path in image_paths:
+        is_error = False
+        
         endX, \
         startX, \
         endY, \
@@ -90,7 +92,9 @@ if __name__ == '__main__':
         square_margin_size = result_cropping[13]
         i = result_cropping[14]
         width_square = result_cropping[15]
-
+        
+        if square_region.size == 0:
+            is_error = True
         result_quality = calculate_face_quality(image, startX, startY, endX, endY, is_error)
         image = result_quality[0]
         x = result_quality[1]

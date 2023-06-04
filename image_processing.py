@@ -212,7 +212,6 @@ def process_image(image_path,
                     #                     i,
                     #                     confidence,
                     #                     error_msg)
-                    break
                 else:
                    break 
         else:
@@ -388,12 +387,12 @@ def draw_rectangle(square_region, \
               (square_margin_upper_left_x + square_margin_size, square_margin_upper_left_y + square_margin_size),
               (255,165,0), thickness)    
     
-    if is_error == False:
+    if not is_error:
         # Draw facial landmarks
-        for j in range(68):
+        for j in range(5):  # Change the range to match the number of landmarks in the 5-point model
             x, y = shape.part(j).x, shape.part(j).y
-            cv2.circle(debug_image, (startX + x, startY + y), thickness, (255, 29, 0), -1)
-    
+            cv2.circle(debug_image, (startX + x, startY + y), thickness, (0, 255, 0), -1)
+
     font_scale = min(image.shape[1], image.shape[0]) / 1000
     font_thickness = max(1, int(min(image.shape[1], image.shape[0]) / 500))
 
