@@ -2,19 +2,9 @@ import cv2
 import os
 import imghdr
 import win32com.client
-from tqdm import tqdm
 import numpy as np
 import variable
-
-def images_error(image_path, error_folder):
-    shell = win32com.client.Dispatch("WScript.Shell")
-    filename_shortcut = os.path.basename(image_path)
-    shortcut_path = os.path.join(error_folder, filename_shortcut + ".lnk")
-    shortcut = shell.CreateShortcut(shortcut_path)
-    shortcut.TargetPath = os.path.abspath(image_path)
-    shortcut.Save()
-
-
+from mtcnn import MTCNN
 
 def process_image(image_path,
                   error_folder,
@@ -39,7 +29,7 @@ def process_image(image_path,
     filename = ""
     error_msg = ""
 
-    net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
+    detector = MTCNN()
     is_error = False
     filename, extension = os.path.splitext(os.path.basename(image_path))
     image = cv2.imread(image_path)
@@ -50,17 +40,19 @@ def process_image(image_path,
         error_count += 1
     else:
         if image.shape[0] > 300 or image.shape[1] > 300:
-            blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
-            net.setInput(blob)
-            detections = net.forward()
+            detections = detector.detect_faces(image)
+            
+            for i, detection in enumerate(detections):
+                confidence = detection['confidence']
+                box = detection['box']
+                (startX, startY, width, height) = box
 
-            for i in range(detections.shape[2]):
-                confidence = detections[0, 0, i, 2]
-                box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
-                (startX, startY, endX, endY) = box.astype(int)
+                endX = startX + width
+                endY = startY + height
 
                 width = endX - startX
                 height = endY - startY
+
                 if confidence < variable.confidence_level:
                     print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping face_{i} on {filename}{extension}")
                     error_msg = "CONFIDENCE LEVEL TOO LOW"
@@ -175,18 +167,22 @@ def process_image(image_path,
                                             error_msg)
                             break
                 break
-            for i in range(detections.shape[2]):
+            for i, detection in enumerate(detections):
                 if is_error == True:
                     break
-                confidence = detections[0, 0, i, 2]
+                confidence = detection['confidence']
 
                 # Filter out weak detections
                 if confidence > variable.confidence_level:
-                    box = detections[0, 0, i, 3:7] * np.array([image.shape[1], image.shape[0], image.shape[1], image.shape[0]])
-                    (startX, startY, endX, endY) = box.astype(int)
+                    box = detection['box']
+                    (startX, startY, width, height) = box
                 
+                    endX = startX + width
+                    endY = startY + height
+
                     width = endX - startX
                     height = endY - startY
+
                     is_error = draw_rectangle(endX,
                                         startX,
                                         endY,
@@ -214,6 +210,15 @@ def process_image(image_path,
             images_error(image_path, error_folder)
             error_count += 1
     return error_count
+
+def images_error(image_path, error_folder):
+    shell = win32com.client.Dispatch("WScript.Shell")
+    filename_shortcut = os.path.basename(image_path)
+    shortcut_path = os.path.join(error_folder, filename_shortcut + ".lnk")
+    shortcut = shell.CreateShortcut(shortcut_path)
+    shortcut.TargetPath = os.path.abspath(image_path)
+    shortcut.Save()
+
 
 def draw_rectangle(endX,
                    startX,
