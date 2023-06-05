@@ -29,13 +29,14 @@ def process_image(image_path,
     output_image_path = ""
     filename = ""
     error_msg = ""
-
-    # Configure TensorFlow to run on the GPU if available
-    gpu_devices = tf.config.list_physical_devices('GPU')
-    if gpu_devices:
-        tf.config.experimental.set_memory_growth(gpu_devices[0], True)
+    
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if len(physical_devices) > 0:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+        tf.config.set_visible_devices(physical_devices[0], 'GPU')
+        print("\nUsing GPU")
     else:
-        tf.config.set_visible_devices([], 'GPU')
+        print("\nNo GPU available. Using CPU.")
         
     detector = MTCNN()
     is_error = False
@@ -58,8 +59,8 @@ def process_image(image_path,
                 endX = startX + width
                 endY = startY + height
 
-                width = endX - startX
-                height = endY - startY
+                # width = endX - startX
+                # height = endY - startY
 
                 if confidence < variable.confidence_level:
                     print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping face_{i} on {filename}{extension}")
@@ -188,8 +189,8 @@ def process_image(image_path,
                     endX = startX + width
                     endY = startY + height
 
-                    width = endX - startX
-                    height = endY - startY
+                    # width = endX - startX
+                    # height = endY - startY
 
                     is_error = draw_rectangle(endX,
                                         startX,
