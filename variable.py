@@ -1,9 +1,9 @@
 confidence_level = 0.5
 
 # Output cropped resolution (pixel)
-output_res = 1080
-preview_output_res = 256
-preview_debug_max_res = 640
+# output_res = 1080
+preview_output_res = 128
+preview_debug_max_res = 128
 
 # Minimun face bounding box size (pixel)
 min_face_res = 96

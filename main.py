@@ -2,12 +2,14 @@ import os
 import cv2
 import tkinter as tk
 from tkinter import filedialog, messagebox, Label, Entry
+from tkinter.ttk import Progressbar
 from PIL import Image, ImageTk
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import variable
 from image_processing import process_image
+import time
 
 # error_folder = variable.error_folder
 preview_output_res = variable.preview_output_res
@@ -25,6 +27,9 @@ class ImageProcessingGUI(tk.Tk):
         self.show_preview = tk.BooleanVar()
         self.parallel_processing = tk.BooleanVar()
         self.output_res = 1080
+
+        self.progress_bar = None
+        self.start_time = 0
 
         self.create_widgets()
 
@@ -91,6 +96,10 @@ class ImageProcessingGUI(tk.Tk):
         self.output_res_entry.insert(0, str(self.output_res))
         self.output_res_entry.pack()
 
+        # Progress Bar
+        self.progress_bar = Progressbar(self, length=400, mode='determinate')
+        self.progress_bar.pack(pady=10)
+
         # Start Processing
         process_button = tk.Button(self, text="Start Processing", command=self.start_processing)
         process_button.pack(pady=20)
@@ -140,10 +149,14 @@ class ImageProcessingGUI(tk.Tk):
         if show_preview:
             self.process_images_single(input_folder, output_folder, debug_output, crop_type, show_preview, top_margin_value, bottom_margin_value, error_folder)
         else:
-            self.process_images_parallel(input_folder, output_folder, debug_output, crop_type, show_preview, top_margin_value, bottom_margin_value, error_folder)
+            self.process_images_parallel(
+                input_folder, output_folder, debug_output, crop_type,
+                show_preview, top_margin_value, bottom_margin_value,
+                error_folder)
 
-
-    def process_images_parallel(self, input_folder, output_folder, debug_output, crop_type, show_preview, top_margin_value, bottom_margin_value, error_folder):
+    def process_images_parallel(self, input_folder, output_folder, debug_output,
+                                crop_type, show_preview, top_margin_value,
+                                bottom_margin_value, error_folder):
         os.makedirs(output_folder, exist_ok=True)
         os.makedirs(debug_output, exist_ok=True)
         os.makedirs(error_folder, exist_ok=True)
@@ -154,7 +167,9 @@ class ImageProcessingGUI(tk.Tk):
         output_res = self.output_res
         with ThreadPoolExecutor() as executor:
             futures = []
-            progress_bar = tqdm(total=total_files, desc="Processing Images", dynamic_ncols=True)
+
+            self.progress_bar["maximum"] = total_files
+            self.start_time = time.time()
 
             for image_path in input_files:
                 args = (
@@ -170,9 +185,16 @@ class ImageProcessingGUI(tk.Tk):
                     top_margin_value,
                     bottom_margin_value,
                 )
-                future = executor.submit(self.process_image_worker, args)
-                future.add_done_callback(lambda f: progress_bar.update(1))
-                futures.append(future)
+                total_files = len(input_files)
+
+                self.progress_bar["maximum"] = total_files
+                self.start_time = time.time()
+
+                futures = []
+                for image_path in input_files:
+                    future = executor.submit(self.process_image_worker, image_path)
+                    future.add_done_callback(partial(self.update_progress_bar, future))
+                    futures.append(future)
 
             for future in futures:
                 future.result()
@@ -183,6 +205,24 @@ class ImageProcessingGUI(tk.Tk):
     def process_image_worker(self, args):
         error_count = process_image(*args)
         return error_count
+
+    def update_progress_bar(self, future):
+        self.progress_bar.step(1)
+
+        processed_files = self.progress_bar["value"]
+        elapsed_time = time.time() - self.start_time
+        speed = processed_files / elapsed_time if elapsed_time > 0 else 0
+        remaining_time = (self.progress_bar["maximum"] - processed_files) / speed if speed > 0 else 0
+
+        progress_text = f"{processed_files}/{self.progress_bar['maximum']} - "
+        progress_text += f"Elapsed: {elapsed_time:.1f}s - "
+        progress_text += f"Remaining: {remaining_time:.1f}s - "
+        progress_text += f"Speed: {speed:.2f} files/s"
+
+        self.progress_bar["value"] = processed_files
+        self.progress_bar.set(progress_text)
+
+        self.update_idletasks()
 
     def process_images_single(self, input_folder, output_folder, debug_output, crop_type, show_preview, top_margin_value, bottom_margin_value, error_folder):
         os.makedirs(output_folder, exist_ok=True)
