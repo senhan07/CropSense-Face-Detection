@@ -1,10 +1,13 @@
 import cv2
 import os
 import imghdr
+from torch import align_tensors
 import win32com.client
 from tqdm import tqdm
 import numpy as np
 import variable
+import dlib
+import math
 
 def images_error(image_path, error_folder):
     shell = win32com.client.Dispatch("WScript.Shell")
@@ -13,6 +16,51 @@ def images_error(image_path, error_folder):
     shortcut = shell.CreateShortcut(shortcut_path)
     shortcut.TargetPath = os.path.abspath(image_path)
     shortcut.Save()
+
+def detect_landmarks(image, bbox):
+    # Load the shape predictor model
+    predictor_path = "shape_predictor_68_face_landmarks.dat"
+    predictor = dlib.shape_predictor(predictor_path) # type: ignore
+
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Create a dlib rectangle object from the bounding box coordinates
+    dlib_rect = dlib.rectangle(bbox[0], bbox[1], bbox[2], bbox[3]) # type: ignore
+
+    # Perform face landmark detection
+    landmarks = predictor(gray, dlib_rect)
+
+    # Convert the landmarks to a numpy array
+    landmarks = np.array([[p.x, p.y] for p in landmarks.parts()])
+
+    return landmarks
+
+
+def rotate_bbox(bbox, center, angle):
+    # Convert the angle to radians
+    angle_rad = math.radians(angle)
+
+    # Calculate the sine and cosine of the angle
+    cos_theta = math.cos(angle_rad)
+    sin_theta = math.sin(angle_rad)
+
+    # Calculate the coordinates of the rotated bounding box
+    rotated_bbox = []
+    for x, y in [(bbox[0], bbox[1]), (bbox[2], bbox[1]), (bbox[2], bbox[3]), (bbox[0], bbox[3])]:
+        # Shift the coordinate system to the rotation center
+        x_shifted = x - center[0]
+        y_shifted = y - center[1]
+
+        # Apply the rotation transformation
+        rotated_x = center[0] + cos_theta * x_shifted - sin_theta * y_shifted
+        rotated_y = center[1] + sin_theta * x_shifted + cos_theta * y_shifted
+
+        # Append the rotated coordinates to the list
+        rotated_bbox.append(int(rotated_x))
+        rotated_bbox.append(int(rotated_y))
+
+    return rotated_bbox
 
 
 
@@ -28,15 +76,7 @@ def process_image(image_path,
                   top_margin_value, 
                   bottom_margin_value,):
     error_count = 0
-    endX = 0
-    endY = 0
-    startX = 0
-    startY = 0
-    i = 0
-    confidence = 0
-    image = ""
     output_image_path = ""
-    filename = ""
     error_msg = ""
 
     net = cv2.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
@@ -61,6 +101,7 @@ def process_image(image_path,
 
                 width = endX - startX
                 height = endY - startY
+
                 if confidence < variable.confidence_level:
                     print(f"\rConfidence level too low ({int(confidence * 100)}%), skipping face_{i} on {filename}{extension}")
                     error_msg = "CONFIDENCE LEVEL TOO LOW"
@@ -187,6 +228,7 @@ def process_image(image_path,
                 
                     width = endX - startX
                     height = endY - startY
+
                     is_error = draw_rectangle(endX,
                                         startX,
                                         endY,
@@ -206,7 +248,8 @@ def process_image(image_path,
                                         is_error,
                                         i,
                                         confidence,
-                                        error_msg)
+                                        error_msg
+                                        )
                 else:
                     break
         else:
@@ -234,17 +277,49 @@ def draw_rectangle(endX,
                    is_error,
                    i,
                    confidence,
-                   error_msg):
+                   error_msg
+                   ):
+    
     # Calculate the size of the square region to be cropped
     square_size = min(endX - startX, endY - startY)
 
     # Calculate the coordinates for the square region
     square_center_x = (endX + startX) // 2
     square_center_y = (endY + startY) // 2
-    square_upper_left_x = square_center_x - square_size // 2
-    square_upper_left_y = square_center_y - square_size // 2
-    square_lower_right_x = square_upper_left_x + square_size
-    square_lower_right_y = square_upper_left_y + square_size
+
+
+
+    # Calculate the angle of rotation based on the eye landmarks
+    landmarks = detect_landmarks(image, (startX, startY, endX, endY))
+    eye_left_x, eye_left_y = landmarks[36]
+    eye_right_x, eye_right_y = landmarks[45]
+    dx = eye_right_x - eye_left_x
+    dy = eye_right_y - eye_left_y
+    angle = math.degrees(math.atan2(dy, dx))
+
+    # Calculate the rotation matrix
+    rotation_center = (square_center_x, square_center_y)
+    rotation_matrix = cv2.getRotationMatrix2D(rotation_center, angle, 1.0)
+
+    # Rotate the four corners of the bounding box
+    corners = np.array([[startX, startY], [endX, startY], [endX, endY], [startX, endY]], dtype=np.float32)
+    rotated_corners = cv2.transform(corners.reshape(-1, 1, 2), rotation_matrix).reshape(-1, 2)
+
+    # Find the new bounding box coordinates
+    rotated_startX = int(np.min(rotated_corners[:, 0]))
+    rotated_startY = int(np.min(rotated_corners[:, 1]))
+    rotated_endX = int(np.max(rotated_corners[:, 0]))
+    rotated_endY = int(np.max(rotated_corners[:, 1]))
+
+
+    square_upper_left_x = rotated_startX
+    square_upper_left_y = rotated_startY
+    square_lower_right_x = rotated_endX
+    square_lower_right_y = rotated_endY
+
+
+
+
 
     width_square = square_lower_right_x - square_upper_left_x
     height_square = square_lower_right_y - square_upper_left_y
@@ -324,11 +399,15 @@ def draw_rectangle(endX,
 
     debug_image = image.copy()
 
-    cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) #face rectangle
-    cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) #crop rectagle
-    cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y),
+    cv2.rectangle(debug_image, (startX, startY), (endX, endY), (0, 0, 255), thickness) # type: ignore #face rectangle
+    cv2.rectangle(debug_image, (square_upper_left_x, square_upper_left_y), (square_lower_right_x, square_lower_right_y), (0, 255, 0), thickness) # type: ignore #crop rectagle
+    cv2.rectangle(debug_image, (square_margin_upper_left_x, square_margin_upper_left_y), # type: ignore
               (square_margin_upper_left_x + square_margin_size, square_margin_upper_left_y + square_margin_size),
-              (255,165,0), thickness)    
+              (255,165,0), thickness) 
+        # Draw the face landmarks on the image
+    for (x, y) in landmarks:
+        cv2.circle(debug_image, (x, y), 10, (0, 255, 0), -1)   
+
     font_scale = min(image.shape[1], image.shape[0]) / 1000
     font_thickness = max(1, int(min(image.shape[1], image.shape[0]) / 500))
 
@@ -432,4 +511,4 @@ def preview(debug_image,
         cv2.setWindowProperty("Output Image", cv2.WND_PROP_TOPMOST, 1)
         cv2.setWindowProperty("Output Image", cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
         
-    cv2.waitKey(250)  # Wait time   
+    cv2.waitKey(0)  # Wait time   
