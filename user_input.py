@@ -25,8 +25,8 @@ def select_option():
         output_folder = output_upperbody_folder
         croptype = 1
     elif option == "2":
-        top_margin_value = 1
-        bottom_margin_value = 1
+        top_margin_value = 0.25
+        bottom_margin_value = 0.25
         debug_output = debug_face_folder
         output_folder = output_face_folder
         croptype = 2
