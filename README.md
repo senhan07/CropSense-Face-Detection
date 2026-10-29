@@ -1,7 +1,4 @@
 # CropSense - Face Detection
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F2K9CHH)
-<a href="https://www.buymeacoffee.com/_ramen_"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=_ramen_&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" height="30px"/></a>
-
 ![GitHub repo size](https://img.shields.io/github/repo-size/senhan07/CropSense-Face-Detection?label=SIZE&style=flat-square)
 ![GitHub issues](https://img.shields.io/github/issues/senhan07/CropSense-Face-Detection?color=red&label=Issues&style=flat-square)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/senhan07/CropSense-Face-Detection?label=Pull%20Requests&style=flat-square)
